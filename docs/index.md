@@ -18,13 +18,19 @@
 
 # Copy a Folder. Get a Superpower.
 
-**jord0.skills** is a collection of 10 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview). No build step. No dependencies. No configuration. Just copy a skill folder into `~/.claude/skills/` and it works.
+**jord0.skills** is a collection of 10 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview). No build step. No dependencies. No configuration.
 
-```
-C:\> cp -r PORTAL ~/.claude/skills/PORTAL
+## Install — Two Commands
+
+```bash
+git clone https://github.com/jord0-cmd/jord0.skills.git
+cp -r jord0.skills/skills/* ~/.claude/skills/
 ```
 
-That's it. You just gave Claude persistent memory across sessions.
+That's it. All 10 skills are installed. Start a Claude Code session and use them immediately.
+
+!!! note "NOTIFY is the only skill with dependencies"
+    NOTIFY needs BurntToast (WSL) or libnotify (Linux) for desktop notifications. Everything else works out of the box. See the [Installation Guide](getting-started/install.md) for NOTIFY setup.
 
 ---
 
@@ -67,23 +73,6 @@ That's it. You just gave Claude persistent memory across sessions.
 
 ---
 
-## Quick Start
-
-```bash
-# Clone the repo
-git clone https://github.com/jord0-cmd/jord0.skills.git
-
-# Copy a skill (or all of them)
-cp -r jord0.skills/skills/PORTAL ~/.claude/skills/PORTAL
-
-# Use it — in Claude Code, just type:
-/PORTAL create my-project
-```
-
-See the [Installation Guide](getting-started/install.md) for all install methods including the plugin marketplace.
-
----
-
 ## Why Skills?
 
 Claude Code is powerful out of the box. But it forgets everything between sessions. It doesn't know your coding standards. It can't carry context across machines.
@@ -97,5 +86,5 @@ Just markdown and, occasionally, a bash script.
 ---
 
 <p style="text-align: center; color: #555; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; margin-top: 3rem;">
-C:\> Built by <a href="https://github.com/jord0-cmd">jord0.cmd</a> | MIT License
+Built by <a href="https://github.com/jord0-cmd">jord0.cmd</a> | MIT License
 </p>

@@ -63,19 +63,6 @@
   background: var(--terminal-bg) !important;
   border: 1px solid #21262d;
   border-radius: 6px;
-  position: relative;
-}
-
-[data-md-color-scheme="slate"] .highlight pre::before {
-  content: "C:\\>";
-  position: absolute;
-  top: 0;
-  left: 0;
-  padding: 4px 12px;
-  font-size: 0.65rem;
-  color: var(--terminal-dim);
-  font-family: 'JetBrains Mono', monospace;
-  letter-spacing: 0.05em;
 }
 
 /* ── Glowing links ── */
@@ -232,9 +219,6 @@
   background: transparent !important;
 }
 
-.hero-ascii .highlight pre::before {
-  display: none !important;
-}
 
 /* ── Blinking cursor effect ── */
 .cursor::after {
