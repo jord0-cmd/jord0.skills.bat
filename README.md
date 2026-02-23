@@ -18,7 +18,7 @@
 
 **10 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview).** Copy a folder, get a superpower.
 
-By [jord0.cmd](https://github.com/jord0-cmd)
+**[Read the Docs](https://jord0-cmd.github.io/jord0.skills/)** | By [jord0.cmd](https://github.com/jord0-cmd)
 
 ---
 
