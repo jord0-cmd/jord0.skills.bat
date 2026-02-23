@@ -1,16 +1,16 @@
 ```
-  C:\SKILLS> jord0.bat
+  C:\> jord0.skills.bat
 
-       ██  ██████  ██████  ██████   ██████        ██████   █████  ████████
-       ██ ██    ██ ██   ██ ██   ██ ██  ████       ██   ██ ██   ██    ██
-       ██ ██    ██ ██████  ██   ██ ██ ██ ██       ██████  ███████    ██
-  ██   ██ ██    ██ ██   ██ ██   ██ ████  ██  ██   ██   ██ ██   ██   ██
-   █████   ██████  ██   ██ ██████   ██████   ██   ██████  ██   ██   ██
+       ██  ██████  ██████  ██████   ██████
+       ██ ██    ██ ██   ██ ██   ██ ██  ████
+       ██ ██    ██ ██████  ██   ██ ██ ██ ██  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+  ██   ██ ██    ██ ██   ██ ██   ██ ████  ██  ░ skills . bat             ░
+   █████   ██████  ██   ██ ██████   ██████   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 
-  10 skills for claude code_
+  10 production skills for claude code_
 ```
 
-# BATCH
+# jord0.skills.bat
 
 **10 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview).** Copy a folder, get a superpower.
 

@@ -8,15 +8,15 @@
 ## Install All Skills
 
 ```bash
-git clone https://github.com/jord0-cmd/batch.git
-cp -r batch/skills/* ~/.claude/skills/
+git clone https://github.com/jord0-cmd/jord0.skills.bat.git
+cp -r jord0.skills.bat/skills/* ~/.claude/skills/
 ```
 
 ## Install a Single Skill
 
 ```bash
-git clone https://github.com/jord0-cmd/batch.git
-cp -r batch/skills/PORTAL ~/.claude/skills/PORTAL
+git clone https://github.com/jord0-cmd/jord0.skills.bat.git
+cp -r jord0.skills.bat/skills/PORTAL ~/.claude/skills/PORTAL
 ```
 
 Or without cloning:
@@ -25,7 +25,7 @@ Or without cloning:
 # Download just one skill folder
 # (Replace PORTAL with any skill name)
 mkdir -p ~/.claude/skills/PORTAL
-curl -sL https://raw.githubusercontent.com/jord0-cmd/batch/main/skills/PORTAL/SKILL.md \
+curl -sL https://raw.githubusercontent.com/jord0-cmd/jord0.skills.bat/main/skills/PORTAL/SKILL.md \
   -o ~/.claude/skills/PORTAL/SKILL.md
 ```
 
@@ -65,7 +65,7 @@ NOTIFY is the only skill requiring external dependencies.
    ```
 5. Copy the skill:
    ```bash
-   cp -r batch/skills/NOTIFY ~/.claude/skills/NOTIFY
+   cp -r jord0.skills.bat/skills/NOTIFY ~/.claude/skills/NOTIFY
    ```
 
 **Requirements:** Windows 10 1903+ or Windows 11
@@ -74,21 +74,21 @@ NOTIFY is the only skill requiring external dependencies.
 
 ```bash
 sudo apt install libnotify-bin
-cp -r batch/skills/NOTIFY ~/.claude/skills/NOTIFY
+cp -r jord0.skills.bat/skills/NOTIFY ~/.claude/skills/NOTIFY
 ```
 
 ### Linux (Fedora)
 
 ```bash
 sudo dnf install libnotify
-cp -r batch/skills/NOTIFY ~/.claude/skills/NOTIFY
+cp -r jord0.skills.bat/skills/NOTIFY ~/.claude/skills/NOTIFY
 ```
 
 ### Linux (Arch)
 
 ```bash
 sudo pacman -S libnotify
-cp -r batch/skills/NOTIFY ~/.claude/skills/NOTIFY
+cp -r jord0.skills.bat/skills/NOTIFY ~/.claude/skills/NOTIFY
 ```
 
 ### macOS
@@ -96,7 +96,7 @@ cp -r batch/skills/NOTIFY ~/.claude/skills/NOTIFY
 No additional dependencies. Just copy:
 
 ```bash
-cp -r batch/skills/NOTIFY ~/.claude/skills/NOTIFY
+cp -r jord0.skills.bat/skills/NOTIFY ~/.claude/skills/NOTIFY
 ```
 
 Note: macOS supports basic notifications only (no interactive buttons or progress bars).
