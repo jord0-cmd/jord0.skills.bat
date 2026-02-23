@@ -17,6 +17,16 @@ Load this at the start of every coding session. These rules are non-negotiable.
 
 ---
 
+## Usage
+
+```
+/strict             - Load coding standards for this session
+```
+
+Invoke at the start of any coding session. STRICT doesn't run commands — it sets expectations. Once loaded, Claude applies these rules to every code change in the session.
+
+---
+
 ## The 11 Critical Rules
 
 ### 1. NEVER MAKE UNAUTHORIZED CHANGES

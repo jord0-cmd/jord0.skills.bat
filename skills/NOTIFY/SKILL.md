@@ -126,7 +126,7 @@ Then verify dependencies:
 
 ---
 
-## Setup
+## Prerequisites and Setup
 
 ### WSL (Windows)
 1. Open **PowerShell as Administrator** on your Windows host
