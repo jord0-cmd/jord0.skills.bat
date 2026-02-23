@@ -28,12 +28,12 @@ Claude captures:
 | **Context** | What project/situation this applies to |
 | **Files** | Which files are affected |
 
-Each echo gets a unique ID: `JORD0-EC-XXXX`
+Each echo gets a unique ID: `ECHO-XXXX`
 
 ### Query an echo
 
 ```
-/echo query JORD0-EC-4K2M
+/echo query ECHO-4K2M
 ```
 
 ### List all echoes

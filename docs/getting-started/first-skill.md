@@ -14,12 +14,14 @@ PORTAL fixes this.
 
 ---
 
-## Install PORTAL
+## Install
 
 ```bash
 git clone https://github.com/jord0-cmd/jord0.skills.git
-cp -r jord0.skills/skills/PORTAL ~/.claude/skills/PORTAL
+cp -r jord0.skills/skills/* ~/.claude/skills/
 ```
+
+This installs all 10 skills. We'll be using PORTAL for this walkthrough.
 
 ---
 
@@ -42,7 +44,7 @@ Claude captures everything:
 You get back an incantation code:
 
 ```
-JORD0-PT-7X3F
+PORTAL-7X3F
 ```
 
 That's your portal. A snapshot of this exact moment in time.
@@ -54,7 +56,7 @@ That's your portal. A snapshot of this exact moment in time.
 Next session. Different day. Maybe even a different machine. Type:
 
 ```
-/portal open JORD0-PT-7X3F
+/portal open PORTAL-7X3F
 ```
 
 Or use the name:

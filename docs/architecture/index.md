@@ -122,7 +122,7 @@ The markdown below the frontmatter is the skill's brain. Common sections:
                                        │
 /echo create ◀── Capture reasoning ◀───┘
                          │
-                   echoes/JORD0-EC-XXXX.json
+                   echoes/ECHO-XXXX.json
 ```
 
 ---

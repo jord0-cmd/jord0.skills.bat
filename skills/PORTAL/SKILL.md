@@ -19,7 +19,7 @@ allowed-tools: Bash, Read, Write
 
 ```
 /portal create <name>   - Save current context with a portal name
-/portal open <id>       - Open a portal by ID (JORD0-PT-XXXX) or name
+/portal open <id>       - Open a portal by ID (PORTAL-XXXX) or name
 /portal list            - Show all available portals
 /portal close <id>      - Delete a portal permanently
 /portal update <id>     - Update an existing portal with new context
@@ -44,7 +44,7 @@ When this skill is invoked with `create <name>`:
    - What's the session state / energy?
    - Any important context that doesn't fit above?
 
-2. **Generate a unique portal ID** — format: `JORD0-PT-XXXX` (4 random alphanumeric chars)
+2. **Generate a unique portal ID** — format: `PORTAL-XXXX` (4 random alphanumeric chars)
 
 3. **Save the portal** as a JSON file containing all captured context
 
@@ -95,7 +95,7 @@ When this skill is invoked:
    - **Key decisions made** → `--decisions`
    - **Blocked on / next steps** → `--next`
    - **Files modified** → `--files`
-4. Generate a unique `JORD0-PT-XXXX` code
+4. Generate a unique `PORTAL-XXXX` code
 5. Save portal JSON to `portals/` directory
 6. Show the portal ID code prominently
 7. Optionally commit to git for cross-machine sync
@@ -123,7 +123,7 @@ When this skill is invoked:
 
 ```json
 {
-  "portal ID": "JORD0-PT-XXXX",
+  "portal ID": "PORTAL-XXXX",
   "name": "project-name",
   "type": "portal",
   "created": "ISO timestamp",
@@ -159,7 +159,7 @@ When this skill is invoked:
 ## Portal ID Format
 
 ```
-JORD0-PT-7X3F
+PORTAL-7X3F
   │    │   │
   │    │   └── Unique 4-char code
   │    └────── PT = Portal type
@@ -188,10 +188,10 @@ The skill works by instructing Claude to gather context, generate codes, and sav
 
 ```
 /portal create auth-refactor
-/portal open JORD0-PT-7X3F
+/portal open PORTAL-7X3F
 /portal open auth-refactor
 /portal list
-/portal close JORD0-PT-7X3F
+/portal close PORTAL-7X3F
 ```
 
 ---

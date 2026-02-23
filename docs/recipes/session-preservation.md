@@ -52,7 +52,7 @@ You're back in flow. No re-explaining. No warmup. Just work.
 /echo query "Why did we choose token rotation?"
 ```
 
-> *Decision: JORD0-EC-4K2M — Refresh tokens rotate on every use (one-time).
+> *Decision: ECHO-4K2M — Refresh tokens rotate on every use (one-time).
 > Reasoning: Prevents token theft replay attacks. Alternatives considered:
 > long-lived refresh tokens (rejected — security risk), session-based auth
 > (rejected — doesn't work for mobile). Confidence: 85%.*

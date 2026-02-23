@@ -42,7 +42,7 @@ Claude captures 5 standardized fields plus optional context:
 You get back a unique portal ID:
 
 ```
-JORD0-PT-7X3F
+PORTAL-7X3F
 ```
 
 ### Open a portal
@@ -50,7 +50,7 @@ JORD0-PT-7X3F
 === "By ID"
 
     ```
-    /portal open JORD0-PT-7X3F
+    /portal open PORTAL-7X3F
     ```
 
 === "By name"
@@ -72,7 +72,7 @@ Shows all saved portals with names, dates, and summaries.
 ### Update a portal
 
 ```
-/portal update JORD0-PT-7X3F
+/portal update PORTAL-7X3F
 ```
 
 Refreshes an existing portal with the current session state.
@@ -80,7 +80,7 @@ Refreshes an existing portal with the current session state.
 ### Close a portal
 
 ```
-/portal close JORD0-PT-7X3F
+/portal close PORTAL-7X3F
 ```
 
 Deletes a portal you no longer need.
@@ -159,7 +159,7 @@ When you portal back in, the decision record is there too. Context + reasoning =
 
 1. When you create a portal, Claude gathers the 5 context fields
 2. Serializes them to a JSON file in `portals/`
-3. Generates a unique ID: `JORD0-PT-XXXX` (4 random alphanumeric characters)
+3. Generates a unique ID: `PORTAL-XXXX` (4 random alphanumeric characters)
 4. When you open a portal, Claude reads the JSON and integrates the context
 5. Responds with a summary of what was restored
 
@@ -167,7 +167,7 @@ The portal file looks like this:
 
 ```json
 {
-  "id": "JORD0-PT-7X3F",
+  "id": "PORTAL-7X3F",
   "name": "my-feature",
   "created": "2026-02-22T14:30:00Z",
   "git": {
