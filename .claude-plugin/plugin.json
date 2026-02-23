@@ -1,0 +1,24 @@
+{
+  "name": "jord0-skills",
+  "description": "10 production-grade skills for Claude Code: context portals, coding standards, project onboarding, structured debates, desktop notifications, deep research, knowledge recall, decision logging, counterarguments, and divergent thinking.",
+  "version": "1.0.0",
+  "author": {
+    "name": "jord0.cmd",
+    "url": "https://github.com/jord0-cmd"
+  },
+  "homepage": "https://github.com/jord0-cmd/jord0.skills.bat",
+  "repository": "https://github.com/jord0-cmd/jord0.skills.bat",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "productivity",
+    "developer-tools",
+    "coding-standards",
+    "context-management",
+    "research",
+    "decision-logging",
+    "notifications",
+    "brainstorming",
+    "debate"
+  ]
+}

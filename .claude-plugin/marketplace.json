@@ -1,0 +1,28 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "jord0-skills-bat",
+  "owner": {
+    "name": "jord0.cmd",
+    "url": "https://github.com/jord0-cmd"
+  },
+  "metadata": {
+    "description": "10 production-grade skills for Claude Code. Context portals, coding standards, project onboarding, structured debates, desktop notifications, deep research, knowledge recall, decision logging, counterarguments, and divergent thinking.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "jord0-skills",
+      "source": ".",
+      "description": "All 10 jord0.skills.bat skills: PORTAL, STRICT, FORGE, CONCLAVE, NOTIFY, RECON, RECALL, ECHO, MIRROR, SPARK",
+      "version": "1.0.0",
+      "category": "development",
+      "tags": [
+        "productivity",
+        "coding-standards",
+        "context-management",
+        "research",
+        "brainstorming"
+      ]
+    }
+  ]
+}

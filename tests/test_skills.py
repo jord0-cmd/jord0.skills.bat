@@ -297,6 +297,85 @@ def test_readme_skill_count(results: TestResults):
         results.fail("readme/skill-count", f"README doesn't mention {actual_count} skills")
 
 
+def test_plugin_json(results: TestResults):
+    """Plugin manifest exists and has required fields."""
+    plugin_file = REPO_ROOT / ".claude-plugin" / "plugin.json"
+    if not plugin_file.exists():
+        results.fail("plugin/exists", ".claude-plugin/plugin.json not found")
+        return
+
+    import json
+    try:
+        data = json.loads(plugin_file.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        results.fail("plugin/valid-json", f"Invalid JSON: {e}")
+        return
+
+    results.ok("plugin/valid-json")
+
+    required_fields = ["name", "description", "version", "author", "license"]
+    missing = [f for f in required_fields if f not in data]
+    if missing:
+        results.fail("plugin/required-fields", f"Missing: {', '.join(missing)}")
+    else:
+        results.ok("plugin/required-fields")
+
+    # Check no personal references in plugin.json
+    content = plugin_file.read_text(encoding="utf-8")
+    violations = []
+    for pattern in BANNED_PATTERNS:
+        matches = re.findall(pattern, content)
+        if matches:
+            violations.extend(matches)
+    if violations:
+        results.fail("plugin/no-personal-refs", f"Found: {', '.join(set(violations)[:3])}")
+    else:
+        results.ok("plugin/no-personal-refs")
+
+
+def test_marketplace_json(results: TestResults):
+    """Marketplace catalog exists and has required fields."""
+    marketplace_file = REPO_ROOT / ".claude-plugin" / "marketplace.json"
+    if not marketplace_file.exists():
+        results.fail("marketplace/exists", ".claude-plugin/marketplace.json not found")
+        return
+
+    import json
+    try:
+        data = json.loads(marketplace_file.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        results.fail("marketplace/valid-json", f"Invalid JSON: {e}")
+        return
+
+    results.ok("marketplace/valid-json")
+
+    required_fields = ["name", "owner", "plugins"]
+    missing = [f for f in required_fields if f not in data]
+    if missing:
+        results.fail("marketplace/required-fields", f"Missing: {', '.join(missing)}")
+    else:
+        results.ok("marketplace/required-fields")
+
+    # Check plugins array is non-empty
+    plugins = data.get("plugins", [])
+    if not plugins:
+        results.fail("marketplace/has-plugins", "plugins array is empty")
+    else:
+        results.ok(f"marketplace/has-plugins ({len(plugins)})")
+
+    # Check no personal references
+    content = marketplace_file.read_text(encoding="utf-8")
+    violations = []
+    for pattern in BANNED_PATTERNS:
+        matches = re.findall(pattern, content)
+        if matches:
+            violations.extend(matches)
+    if violations:
+        results.fail("marketplace/no-personal-refs", f"Found: {', '.join(set(violations)[:3])}")
+    else:
+        results.ok("marketplace/no-personal-refs")
+
+
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
@@ -310,40 +389,48 @@ def main():
 
     results = TestResults()
 
-    print("[1/9] Skill directories exist")
+    print("[1/11] Skill directories exist")
     test_all_skills_exist(results)
     print()
 
-    print("[2/9] YAML frontmatter valid")
+    print("[2/11] YAML frontmatter valid")
     test_frontmatter(results)
     print()
 
-    print("[3/9] No personal references")
+    print("[3/11] No personal references")
     test_no_personal_references(results)
     print()
 
-    print("[4/9] Required sections present")
+    print("[4/11] Required sections present")
     test_required_sections(results)
     print()
 
-    print("[5/9] Names are ALL CAPS")
+    print("[5/11] Names are ALL CAPS")
     test_skill_names_uppercase(results)
     print()
 
-    print("[6/9] Frontmatter name matches directory")
+    print("[6/11] Frontmatter name matches directory")
     test_frontmatter_name_matches_dir(results)
     print()
 
-    print("[7/9] Script syntax valid")
+    print("[7/11] Script syntax valid")
     test_scripts_syntax(results)
     print()
 
-    print("[8/9] No hardcoded absolute paths")
+    print("[8/11] No hardcoded absolute paths")
     test_no_absolute_paths(results)
     print()
 
-    print("[9/9] README consistency")
+    print("[9/11] README consistency")
     test_readme_skill_count(results)
+    print()
+
+    print("[10/11] Plugin manifest")
+    test_plugin_json(results)
+    print()
+
+    print("[11/11] Marketplace catalog")
+    test_marketplace_json(results)
     print()
 
     print("=" * 60)

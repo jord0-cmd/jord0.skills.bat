@@ -39,20 +39,32 @@ By [jord0.cmd](https://github.com/jord0-cmd)
 
 ---
 
-## Quick Install
+## Install
 
-```bash
-# Install a single skill
-cp -r skills/PORTAL ~/.claude/skills/PORTAL
+### Option 1: Plugin Marketplace (Recommended)
 
-# Install all skills
-cp -r skills/* ~/.claude/skills/
-
-# Verify
-ls ~/.claude/skills/
+```
+/plugin marketplace add jord0-cmd/jord0.skills.bat
+/plugin install jord0-skills@jord0-skills-bat
 ```
 
-That's it. No build step, no dependencies (except NOTIFY — see below), no configuration.
+All 10 skills install and update automatically. Skills are namespaced as `/jord0-skills:PORTAL`, `/jord0-skills:STRICT`, etc.
+
+### Option 2: Direct Plugin
+
+```bash
+git clone https://github.com/jord0-cmd/jord0.skills.bat.git
+claude --plugin-dir ./jord0.skills.bat
+```
+
+### Option 3: Copy Individual Skills
+
+```bash
+git clone https://github.com/jord0-cmd/jord0.skills.bat.git
+cp -r jord0.skills.bat/skills/PORTAL ~/.claude/skills/PORTAL
+```
+
+No build step, no dependencies (except NOTIFY — see below), no configuration.
 
 See [INSTALL.md](INSTALL.md) for detailed instructions.
 

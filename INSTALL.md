@@ -5,21 +5,64 @@
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview) CLI installed and configured
 - A `~/.claude/skills/` directory (created automatically by Claude Code)
 
-## Install All Skills
+---
+
+## Option 1: Plugin Marketplace (Recommended)
+
+The fastest way to install. Run these commands inside a Claude Code session:
+
+```
+/plugin marketplace add jord0-cmd/jord0.skills.bat
+/plugin install jord0-skills@jord0-skills-bat
+```
+
+**What this does:**
+- Registers the jord0-skills-bat marketplace as a source
+- Installs all 10 skills as the `jord0-skills` plugin
+- Skills are namespaced: `/jord0-skills:PORTAL`, `/jord0-skills:STRICT`, etc.
+- Updates automatically when you run `/plugin update`
+
+**To uninstall:**
+```
+/plugin uninstall jord0-skills
+```
+
+---
+
+## Option 2: Direct Plugin
+
+Load the entire repo as a plugin directory:
+
+```bash
+git clone https://github.com/jord0-cmd/jord0.skills.bat.git
+claude --plugin-dir ./jord0.skills.bat
+```
+
+This loads all 10 skills for the current session. Add `--plugin-dir` to your shell alias for persistence:
+
+```bash
+alias claude='claude --plugin-dir ~/path/to/jord0.skills.bat'
+```
+
+---
+
+## Option 3: Copy Individual Skills
+
+### All Skills
 
 ```bash
 git clone https://github.com/jord0-cmd/jord0.skills.bat.git
 cp -r jord0.skills.bat/skills/* ~/.claude/skills/
 ```
 
-## Install a Single Skill
+### Single Skill
 
 ```bash
 git clone https://github.com/jord0-cmd/jord0.skills.bat.git
 cp -r jord0.skills.bat/skills/PORTAL ~/.claude/skills/PORTAL
 ```
 
-Or without cloning:
+### Without Cloning (curl)
 
 ```bash
 # Download just one skill folder
