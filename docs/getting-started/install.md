@@ -1,28 +1,43 @@
 # Installation
 
-Three ways in. Pick your poison.
+Two commands. No build step. No configuration.
 
 ---
 
-## Option 1: Plugin Marketplace (Recommended)
+## Option 1: Clone & Copy (Recommended)
 
-Inside a Claude Code session:
-
-```
-/plugin marketplace add jord0-cmd/jord0.skills
-/plugin install jord0-skills@jord0-skills
+```bash
+git clone https://github.com/jord0-cmd/jord0.skills.git
+cp -r jord0.skills/skills/* ~/.claude/skills/
 ```
 
-All 10 skills install at once. Skills are namespaced as `/jord0-skills:PORTAL`, `/jord0-skills:STRICT`, etc. Updates automatically with `/plugin update`.
+That's it. All 10 skills are installed. Start a Claude Code session and use them immediately.
 
-To uninstall:
+!!! note "NOTIFY is the only skill with dependencies"
+    NOTIFY needs BurntToast (WSL) or libnotify (Linux) for desktop notifications. Everything else works out of the box. See [NOTIFY Setup](#notify-setup) below.
+
+---
+
+## Option 2: Copy Individual Skills
+
+Don't want all 10? Grab just the ones you need:
+
+```bash
+git clone https://github.com/jord0-cmd/jord0.skills.git
+cp -r jord0.skills/skills/PORTAL ~/.claude/skills/PORTAL
 ```
-/plugin uninstall jord0-skills
+
+### Without cloning (curl)
+
+```bash
+mkdir -p ~/.claude/skills/PORTAL
+curl -sL https://raw.githubusercontent.com/jord0-cmd/jord0.skills/main/skills/PORTAL/SKILL.md \
+  -o ~/.claude/skills/PORTAL/SKILL.md
 ```
 
 ---
 
-## Option 2: Direct Plugin
+## Option 3: Direct Plugin
 
 Load the entire repo as a plugin directory:
 
@@ -39,29 +54,16 @@ alias claude='claude --plugin-dir ~/path/to/jord0.skills'
 
 ---
 
-## Option 3: Copy Individual Skills
+## Coming Soon: Plugin Marketplace
 
-### All skills at once
+We've submitted to the Anthropic plugin marketplace. Once approved, you'll be able to install with:
 
-```bash
-git clone https://github.com/jord0-cmd/jord0.skills.git
-cp -r jord0.skills/skills/* ~/.claude/skills/
+```
+/plugin marketplace add jord0-cmd/jord0.skills
+/plugin install jord0-skills@jord0-skills
 ```
 
-### Just one skill
-
-```bash
-git clone https://github.com/jord0-cmd/jord0.skills.git
-cp -r jord0.skills/skills/PORTAL ~/.claude/skills/PORTAL
-```
-
-### Without cloning (curl)
-
-```bash
-mkdir -p ~/.claude/skills/PORTAL
-curl -sL https://raw.githubusercontent.com/jord0-cmd/jord0.skills/main/skills/PORTAL/SKILL.md \
-  -o ~/.claude/skills/PORTAL/SKILL.md
-```
+This will enable automatic updates via `/plugin update`. Watch the repo for announcements.
 
 ---
 
