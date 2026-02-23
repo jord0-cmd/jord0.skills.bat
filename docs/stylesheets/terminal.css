@@ -212,15 +212,28 @@
 
 /* ── ASCII art hero ── */
 .hero-ascii {
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 0.6rem !important;
-  line-height: 1.2 !important;
-  color: var(--terminal-green) !important;
   text-align: center !important;
-  padding: 2.5rem 0 1.5rem !important;
-  white-space: pre !important;
-  text-shadow: var(--crt-glow) !important;
+  padding: 1rem 0 0 !important;
   overflow-x: auto !important;
+}
+
+.hero-ascii pre {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  text-align: center !important;
+}
+
+.hero-ascii code {
+  color: var(--terminal-green) !important;
+  text-shadow: var(--crt-glow) !important;
+  font-size: 0.55rem !important;
+  line-height: 1.2 !important;
+  background: transparent !important;
+}
+
+.hero-ascii .highlight pre::before {
+  display: none !important;
 }
 
 /* ── Blinking cursor effect ── */
@@ -267,6 +280,16 @@
 
 [data-md-color-scheme="slate"] .md-typeset table:not([class]) td {
   border-color: #21262d;
+}
+
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) tr:hover td {
+  background: #161b22;
+}
+
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) td a strong {
+  color: var(--terminal-green) !important;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
 }
 
 /* ── Keyboard keys ── */
