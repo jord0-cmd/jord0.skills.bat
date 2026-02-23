@@ -18,7 +18,35 @@
 
 **10 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview).** Copy a folder, get a superpower.
 
-**[Read the Docs](https://jord0-cmd.github.io/jord0.skills/)** | By [jord0.cmd](https://github.com/jord0-cmd)
+By [jord0.cmd](https://github.com/jord0-cmd)
+
+---
+
+## 📖 Documentation
+
+### **[jord0-cmd.github.io/jord0.skills](https://jord0-cmd.github.io/jord0.skills/)**
+
+The full docs site has everything you need to get the most out of these skills:
+
+- **[Getting Started](https://jord0-cmd.github.io/jord0.skills/getting-started/install/)** — Install guide, your first skill walkthrough, how skills work under the hood
+- **[Skill Guides](https://jord0-cmd.github.io/jord0.skills/skills/)** — Deep dive on every skill with usage examples, advanced tricks, and tips
+- **[Recipes](https://jord0-cmd.github.io/jord0.skills/recipes/)** — Multi-skill workflows: session preservation, cross-machine portals, decision audit trails, the full-stack daily ritual
+- **[Architecture](https://jord0-cmd.github.io/jord0.skills/architecture/)** — How the skill system works, data flow diagrams, design principles for building your own
+
+---
+
+## Install
+
+```bash
+git clone https://github.com/jord0-cmd/jord0.skills.git
+cp -r jord0.skills/skills/* ~/.claude/skills/
+```
+
+All 10 skills are installed. No build step, no configuration. Start a Claude Code session and use them immediately.
+
+> **Note:** NOTIFY is the only skill with external dependencies (BurntToast for WSL, libnotify for Linux). Everything else works out of the box.
+
+See the [full install guide](https://jord0-cmd.github.io/jord0.skills/getting-started/install/) for alternative install methods including the plugin marketplace.
 
 ---
 
@@ -30,43 +58,12 @@
 | [**STRICT**](skills/STRICT/) | Non-negotiable coding standards — 11 critical rules | None |
 | [**FORGE**](skills/FORGE/) | Onboard any codebase — generates CLAUDE.md automatically | None |
 | [**CONCLAVE**](skills/CONCLAVE/) | Multi-perspective structured debate (9 voices) | None |
-| [**NOTIFY**](skills/NOTIFY/) | Cross-platform desktop notifications with interactive buttons | See below |
-| [**RECON**](skills/RECON/) | Deep research that persists to a knowledge base | WebSearch access |
-| [**RECALL**](skills/RECALL/) | Search your knowledge base before searching the web | Knowledge base |
 | [**ECHO**](skills/ECHO/) | Capture decision reasoning — queryable ADR system | None |
 | [**MIRROR**](skills/MIRROR/) | Force counterarguments against your own recommendations | None |
 | [**SPARK**](skills/SPARK/) | Divergent thinking — break out of conventional solutions | None |
-
----
-
-## Install
-
-### Option 1: Plugin Marketplace (Recommended)
-
-```
-/plugin marketplace add jord0-cmd/jord0.skills
-/plugin install jord0-skills@jord0-skills
-```
-
-All 10 skills install and update automatically. Skills are namespaced as `/jord0-skills:PORTAL`, `/jord0-skills:STRICT`, etc.
-
-### Option 2: Direct Plugin
-
-```bash
-git clone https://github.com/jord0-cmd/jord0.skills.git
-claude --plugin-dir ./jord0.skills
-```
-
-### Option 3: Copy Individual Skills
-
-```bash
-git clone https://github.com/jord0-cmd/jord0.skills.git
-cp -r jord0.skills/skills/PORTAL ~/.claude/skills/PORTAL
-```
-
-No build step, no dependencies (except NOTIFY — see below), no configuration.
-
-See [INSTALL.md](INSTALL.md) for detailed instructions.
+| [**RECON**](skills/RECON/) | Deep research that persists to a knowledge base | WebSearch access |
+| [**RECALL**](skills/RECALL/) | Search your knowledge base before searching the web | Knowledge base |
+| [**NOTIFY**](skills/NOTIFY/) | Cross-platform desktop notifications with interactive buttons | See below |
 
 ---
 
