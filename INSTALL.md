@@ -176,7 +176,7 @@ Remove individual skills:
 rm -rf ~/.claude/skills/PORTAL
 ```
 
-Remove all batch skills:
+Remove all jord0 skills:
 
 ```bash
 rm -rf ~/.claude/skills/{PORTAL,STRICT,FORGE,CONCLAVE,NOTIFY,RECON,RECALL,ECHO,MIRROR,SPARK}

@@ -125,7 +125,7 @@ When this skill is invoked:
 {
   "portal ID": "JORD0-PT-XXXX",
   "name": "project-name",
-  "spell_type": "portal",
+  "type": "portal",
   "created": "ISO timestamp",
   "origin": {
     "project": "current directory name",
@@ -156,7 +156,7 @@ When this skill is invoked:
 
 ---
 
-## Incantation Format
+## Portal ID Format
 
 ```
 JORD0-PT-7X3F
