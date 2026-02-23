@@ -1,0 +1,109 @@
+site_name: jord0.skills
+site_url: https://jord0-cmd.github.io/jord0.skills
+site_description: "10 production skills for Claude Code. Copy a folder, get a superpower."
+site_author: jord0.cmd
+
+repo_url: https://github.com/jord0-cmd/jord0.skills
+repo_name: jord0-cmd/jord0.skills
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  palette:
+    - scheme: slate
+      primary: black
+      accent: lime
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+    - scheme: default
+      primary: black
+      accent: lime
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+  font:
+    text: JetBrains Mono
+    code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
+    logo: material/console
+  features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - search.highlight
+    - search.share
+    - toc.follow
+
+extra_css:
+  - stylesheets/terminal.css
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+plugins:
+  - search
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/jord0-cmd
+  generator: false
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/install.md
+    - Your First Skill: getting-started/first-skill.md
+    - How Skills Work: getting-started/how-it-works.md
+  - Skills:
+    - Overview: skills/index.md
+    - PORTAL: skills/portal.md
+    - STRICT: skills/strict.md
+    - FORGE: skills/forge.md
+    - CONCLAVE: skills/conclave.md
+    - ECHO: skills/echo.md
+    - MIRROR: skills/mirror.md
+    - SPARK: skills/spark.md
+    - RECON: skills/recon.md
+    - RECALL: skills/recall.md
+    - NOTIFY: skills/notify.md
+  - Recipes:
+    - Overview: recipes/index.md
+    - Session Preservation: recipes/session-preservation.md
+    - Cross-Machine Workflow: recipes/cross-machine.md
+    - Decision Audit Trail: recipes/decision-trail.md
+    - Deep Research Pipeline: recipes/research-pipeline.md
+    - The Full Stack: recipes/full-stack.md
+  - Architecture:
+    - How It Works: architecture/index.md
