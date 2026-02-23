@@ -8,13 +8,13 @@
   ╚█████╔╝╚██████╔╝██║  ██║██████╔╝╚██████╔╝
    ╚════╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝  ╚═════╝
 
-  C:\> jord0.skills.bat
-  10 production skills for claude code
+  C:\> jord0.skills
+  10 production skills for Claude Code
 
 
 ```
 
-# jord0.skills.bat
+# jord0.skills
 
 **10 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview).** Copy a folder, get a superpower.
 
@@ -44,8 +44,8 @@ By [jord0.cmd](https://github.com/jord0-cmd)
 ### Option 1: Plugin Marketplace (Recommended)
 
 ```
-/plugin marketplace add jord0-cmd/jord0.skills.bat
-/plugin install jord0-skills@jord0-skills-bat
+/plugin marketplace add jord0-cmd/jord0.skills
+/plugin install jord0-skills@jord0-skills
 ```
 
 All 10 skills install and update automatically. Skills are namespaced as `/jord0-skills:PORTAL`, `/jord0-skills:STRICT`, etc.
@@ -53,15 +53,15 @@ All 10 skills install and update automatically. Skills are namespaced as `/jord0
 ### Option 2: Direct Plugin
 
 ```bash
-git clone https://github.com/jord0-cmd/jord0.skills.bat.git
-claude --plugin-dir ./jord0.skills.bat
+git clone https://github.com/jord0-cmd/jord0.skills.git
+claude --plugin-dir ./jord0.skills
 ```
 
 ### Option 3: Copy Individual Skills
 
 ```bash
-git clone https://github.com/jord0-cmd/jord0.skills.bat.git
-cp -r jord0.skills.bat/skills/PORTAL ~/.claude/skills/PORTAL
+git clone https://github.com/jord0-cmd/jord0.skills.git
+cp -r jord0.skills/skills/PORTAL ~/.claude/skills/PORTAL
 ```
 
 No build step, no dependencies (except NOTIFY — see below), no configuration.

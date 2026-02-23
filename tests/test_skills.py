@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-jord0.skills.bat — Skill Validation Test Suite
+jord0.skills — Skill Validation Test Suite
 
 Runs against all skills in the repository to ensure quality standards.
 Execute: python -m pytest tests/ -v
@@ -383,7 +383,7 @@ def test_marketplace_json(results: TestResults):
 def main():
     print()
     print("=" * 60)
-    print("  jord0.skills.bat — Skill Validation Suite")
+    print("  jord0.skills — Skill Validation Suite")
     print("=" * 60)
     print()
 

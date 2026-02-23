@@ -64,12 +64,12 @@ This is architectural decision records (ADRs) made practical and queryable.
   ECHO CAPTURED
 ══════════════════════════════════════════════════════
   Name:        auth-strategy
-  ID:          BATCH-EC-L6C4
+  ID:          JORD0-EC-L6C4
   Decision:    JWT with refresh tokens over session-ba...
   Confidence:  0.8
 
   Query later with:
-    /echo query BATCH-EC-L6C4 'why did we choose JWT?'
+    /echo query JORD0-EC-L6C4 'why did we choose JWT?'
 ══════════════════════════════════════════════════════
 ```
 
@@ -79,7 +79,7 @@ This is architectural decision records (ADRs) made practical and queryable.
 
 ```
 /echo query auth-strategy "why not session cookies?"
-/echo query BATCH-EC-L6C4 "what were the unknowns?"
+/echo query JORD0-EC-L6C4 "what were the unknowns?"
 ```
 
 Returns the full decision context including:
@@ -98,7 +98,7 @@ When this skill is invoked:
 
 **For `/echo create <name>`:**
 1. Parse all provided flags
-2. Generate a unique ID: `BATCH-EC-XXXX`
+2. Generate a unique ID: `JORD0-EC-XXXX`
 3. Save echo JSON to `echoes/` directory
 4. Update the echo index
 5. Display the echo ID for future reference
@@ -119,7 +119,7 @@ When this skill is invoked:
 
 ```json
 {
-  "id": "BATCH-EC-L6C4",
+  "id": "JORD0-EC-L6C4",
   "name": "auth-strategy",
   "created": "2024-01-15T14:30:00",
   "decision": {

@@ -1,6 +1,6 @@
 # Marketplace Submissions Tracker
 
-Track the status of directory/awesome-list submissions for jord0.skills.bat.
+Track the status of directory/awesome-list submissions for jord0.skills.
 
 ---
 
@@ -18,7 +18,7 @@ Track the status of directory/awesome-list submissions for jord0.skills.bat.
 
 ### Submission info:
 - **Plugin name**: jord0-skills
-- **Repository**: https://github.com/jord0-cmd/jord0.skills.bat
+- **Repository**: https://github.com/jord0-cmd/jord0.skills
 - **Description**: 10 production-grade skills for Claude Code — context portals, coding standards, project onboarding, structured debates, desktop notifications, deep research, knowledge recall, decision logging, counterarguments, and divergent thinking.
 - **Category**: Development / Productivity
 
@@ -33,7 +33,7 @@ Track the status of directory/awesome-list submissions for jord0.skills.bat.
 
 ### Entry:
 ```markdown
-- **[jord0.skills.bat](https://github.com/jord0-cmd/jord0.skills.bat)** - 10 production-grade skills (context portals, coding standards, project onboarding, structured debates, desktop notifications, deep research, knowledge recall, decision logging, counterarguments, divergent thinking). Zero-dependency, copy-one-folder install.
+- **[jord0.skills](https://github.com/jord0-cmd/jord0.skills)** - 10 production-grade skills (context portals, coding standards, project onboarding, structured debates, desktop notifications, deep research, knowledge recall, decision logging, counterarguments, divergent thinking). Zero-dependency, copy-one-folder install.
 ```
 
 ---
@@ -46,7 +46,7 @@ Track the status of directory/awesome-list submissions for jord0.skills.bat.
 
 ### Entry:
 ```markdown
-- **[jord0.skills.bat](https://github.com/jord0-cmd/jord0.skills.bat)** - 10 production-grade skills for Claude Code. Context portals, coding standards, project onboarding, structured debates, desktop notifications, deep research, knowledge recall, decision logging, counterarguments, and divergent thinking. Plugin marketplace compatible.
+- **[jord0.skills](https://github.com/jord0-cmd/jord0.skills)** - 10 production-grade skills for Claude Code. Context portals, coding standards, project onboarding, structured debates, desktop notifications, deep research, knowledge recall, decision logging, counterarguments, and divergent thinking. Plugin marketplace compatible.
 ```
 
 ---
@@ -60,7 +60,7 @@ Track the status of directory/awesome-list submissions for jord0.skills.bat.
 
 ### Entry (draft):
 ```markdown
-- **[jord0.skills.bat](https://github.com/jord0-cmd/jord0.skills.bat)** - 10 production-grade skills: context portals, coding standards, project onboarding, structured debates, desktop notifications, deep research, knowledge recall, decision logging, counterarguments, and divergent thinking.
+- **[jord0.skills](https://github.com/jord0-cmd/jord0.skills)** - 10 production-grade skills: context portals, coding standards, project onboarding, structured debates, desktop notifications, deep research, knowledge recall, decision logging, counterarguments, and divergent thinking.
 ```
 
 ---

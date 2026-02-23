@@ -19,7 +19,7 @@ allowed-tools: Bash, Read, Write
 
 ```
 /portal create <name>   - Save current context with a portal name
-/portal open <id>       - Open a portal by ID (BATCH-PT-XXXX) or name
+/portal open <id>       - Open a portal by ID (JORD0-PT-XXXX) or name
 /portal list            - Show all available portals
 /portal close <id>      - Delete a portal permanently
 /portal update <id>     - Update an existing portal with new context
@@ -44,7 +44,7 @@ When this skill is invoked with `create <name>`:
    - What's the session state / energy?
    - Any important context that doesn't fit above?
 
-2. **Generate a unique portal ID** — format: `BATCH-PT-XXXX` (4 random alphanumeric chars)
+2. **Generate a unique portal ID** — format: `JORD0-PT-XXXX` (4 random alphanumeric chars)
 
 3. **Save the portal** as a JSON file containing all captured context
 
@@ -95,7 +95,7 @@ When this skill is invoked:
    - **Key decisions made** → `--decisions`
    - **Blocked on / next steps** → `--next`
    - **Files modified** → `--files`
-4. Generate a unique `BATCH-PT-XXXX` code
+4. Generate a unique `JORD0-PT-XXXX` code
 5. Save portal JSON to `portals/` directory
 6. Show the portal ID code prominently
 7. Optionally commit to git for cross-machine sync
@@ -123,7 +123,7 @@ When this skill is invoked:
 
 ```json
 {
-  "portal ID": "BATCH-PT-XXXX",
+  "portal ID": "JORD0-PT-XXXX",
   "name": "project-name",
   "spell_type": "portal",
   "created": "ISO timestamp",
@@ -159,7 +159,7 @@ When this skill is invoked:
 ## Incantation Format
 
 ```
-BATCH-PT-7X3F
+JORD0-PT-7X3F
   │    │   │
   │    │   └── Unique 4-char code
   │    └────── PT = Portal type
@@ -174,9 +174,9 @@ PORTAL is self-contained. To install:
 
 1. Copy this folder to `~/.claude/skills/PORTAL/`
 2. Create a `portals/` directory wherever you want to store portals (default: project root or `~/.claude/portals/`)
-3. Optionally set up git sync for cross-machine availability
+3. **For cross-machine sync**: store your `portals/` directory inside a git repository
 
-**Cross-machine sync:** Portal files are plain JSON. To share them across machines, commit them to a shared git repo or store them in a synced directory (Dropbox, iCloud, etc.). The skill will offer to `git add && git commit` after creating a portal if it detects a git repository.
+**Cross-machine sync requires git.** Portal files are plain JSON. The skill will offer to `git add && git commit && git push` after creating a portal if it detects a git repository. On the receiving machine, `git pull` brings all portals up to date. Alternatively, use any synced directory (Dropbox, iCloud, etc.).
 
 **Conflict safety:** Opening a portal does NOT modify your working tree. It only restores *cognitive* context — what you were doing, decisions made, next steps. Your git state remains untouched.
 
@@ -188,10 +188,10 @@ The skill works by instructing Claude to gather context, generate codes, and sav
 
 ```
 /portal create auth-refactor
-/portal open BATCH-PT-7X3F
+/portal open JORD0-PT-7X3F
 /portal open auth-refactor
 /portal list
-/portal close BATCH-PT-7X3F
+/portal close JORD0-PT-7X3F
 ```
 
 ---
@@ -199,8 +199,8 @@ The skill works by instructing Claude to gather context, generate codes, and sav
 ## Prerequisites
 
 - Claude Code with Bash, Read, and Write tool access
+- **Git** — required for cross-machine sync (portals are committed and pushed to a shared repo). Without git, portals are local-only.
 - A `portals/` directory for storage (skill will create it if missing)
-- Git (optional, for cross-machine sync)
 - No external packages required
 
 ---

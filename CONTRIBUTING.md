@@ -1,4 +1,4 @@
-# Contributing to BATCH
+# Contributing to jord0.skills
 
 Thanks for wanting to contribute. Here's how.
 

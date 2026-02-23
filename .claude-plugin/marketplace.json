@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "jord0-skills-bat",
+  "name": "jord0-skills",
   "owner": {
     "name": "jord0.cmd",
     "url": "https://github.com/jord0-cmd"
@@ -13,7 +13,7 @@
     {
       "name": "jord0-skills",
       "source": ".",
-      "description": "All 10 jord0.skills.bat skills: PORTAL, STRICT, FORGE, CONCLAVE, NOTIFY, RECON, RECALL, ECHO, MIRROR, SPARK",
+      "description": "All 10 jord0.skills skills: PORTAL, STRICT, FORGE, CONCLAVE, NOTIFY, RECON, RECALL, ECHO, MIRROR, SPARK",
       "version": "1.0.0",
       "category": "development",
       "tags": [
