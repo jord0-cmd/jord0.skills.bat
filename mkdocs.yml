@@ -11,16 +11,16 @@ theme:
   custom_dir: docs/overrides
   palette:
     - scheme: slate
-      primary: black
+      primary: custom
       accent: lime
       toggle:
-        icon: material/weather-night
+        icon: material/weather-sunny
         name: Switch to light mode
     - scheme: default
       primary: black
       accent: lime
       toggle:
-        icon: material/weather-sunny
+        icon: material/weather-night
         name: Switch to dark mode
   font:
     text: JetBrains Mono
