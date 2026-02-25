@@ -48,7 +48,7 @@ This is architectural decision records (ADRs) made practical and queryable.
 
 | Field | Flag | Description |
 |-------|------|-------------|
-| **Name** | (positional) | Human-readable identifier |
+| **Name** | (positional) | Human-readable identifier (alphanumeric, hyphens, underscores only) |
 | **Decision** | `--decision` | What was decided |
 | **Reasoning** | `--reasoning` | Why this choice was made |
 | **Alternatives** | `--alternatives` | Comma-separated rejected options |

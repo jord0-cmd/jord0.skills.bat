@@ -153,13 +153,23 @@ def _send_linux_notify(
         return False
 
 
+def _escape_applescript_string(s: str) -> str:
+    """Escape a string for safe use inside AppleScript double-quoted strings.
+
+    AppleScript uses backslash escapes inside double-quoted strings, so we must
+    escape backslashes first, then double quotes. This prevents breakout from
+    the string boundary via crafted input like: test\\" & do shell script \\"id
+    """
+    return s.replace("\\", "\\\\").replace('"', '\\"')
+
+
 def _send_macos_notify(title: str, message: str, sound: bool = False) -> bool:
     """Send notification via osascript on macOS."""
     if not IS_MACOS:
         return False
     try:
-        escaped_title = title.replace('"', '\\"')
-        escaped_msg = message.replace('"', '\\"')
+        escaped_title = _escape_applescript_string(title)
+        escaped_msg = _escape_applescript_string(message)
         sound_str = ' sound name "default"' if sound else ""
         script = f'display notification "{escaped_msg}" with title "{escaped_title}"{sound_str}'
         result = subprocess.run(
@@ -297,7 +307,10 @@ def send_toast(
     if alarm:
         sound_param = "-Sound Alarm"
     elif sound:
-        sound_param = f"-Sound {sound}"
+        # Sanitize sound parameter — only allow alphanumeric names to prevent
+        # PowerShell injection through crafted sound values
+        safe_sound = "".join(c for c in str(sound) if c.isalnum())
+        sound_param = f"-Sound {safe_sound}"
 
     if line3_escaped:
         text_param = f"-Text '{title_escaped}', '{message_escaped}', '{line3_escaped}'"

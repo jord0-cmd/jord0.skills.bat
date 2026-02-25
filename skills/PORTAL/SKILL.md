@@ -31,7 +31,7 @@ allowed-tools: Bash, Read, Write
 
 ### Creating a Portal
 
-When this skill is invoked with `create <name>`:
+When this skill is invoked with `create <name>` (name must be alphanumeric, hyphens, or underscores only — no path separators or special characters):
 
 1. **Gather context — ALWAYS include these 5 standardized fields:**
    - **Active branch & last commit** — run `git branch --show-current` and `git log -1 --oneline` to capture exactly where the codebase sits
@@ -160,10 +160,9 @@ When this skill is invoked:
 
 ```
 PORTAL-7X3F
-  │    │   │
-  │    │   └── Unique 4-char code
-  │    └────── PT = Portal type
-  └─────────── Prefix (customize to your brand)
+  │      │
+  │      └── Unique 4-char alphanumeric code
+  └──────── Prefix
 ```
 
 ---
