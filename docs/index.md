@@ -91,5 +91,5 @@ Skills fix that. They're markdown files that teach Claude new behaviors — pers
 ---
 
 <p style="text-align: center; color: #555; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; margin-top: 3rem;">
-Built by <a href="https://github.com/jord0-cmd">jord0.cmd</a> | MIT License
+Built by <a href="https://github.com/jord0-cmd">jord0.cmd</a> | MIT License | <em>Build something weird.</em>
 </p>

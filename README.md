@@ -134,3 +134,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on submitting new skills o
 ## License
 
 MIT — see [LICENSE](LICENSE)
+
+---
+
+<sub>*Build something weird.*</sub>
