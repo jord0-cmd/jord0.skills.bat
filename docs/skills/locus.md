@@ -131,7 +131,7 @@ Not everything is a rectangle. Gauges are circular. Smoke wisps are organic. Whi
 The polygons export as percentage-based vertex arrays — responsive at any size.
 
 ![ADT Debug Overlay](../assets/screenshots/locus-debug-overlay.png)
-*The debug wireframe showing all mapped zones — IQM quads (LEFT_MONITOR, RIGHT_MONITOR) and an ADT polygon (rotary phone). Toggle with Ctrl+Shift+D.*
+*The Component Showcase — ADT wireframe overlay showing quads (dashed green) and polygons (dashed magenta) with labelled centres. STEAM_PIPE and RIGHT_MONITOR zones visible.*
 
 ---
 
@@ -140,7 +140,7 @@ The polygons export as percentage-based vertex arrays — responsive at any size
 Drag a slider to compare two versions of the same image.
 
 ![LOCUS CompareSlider](../assets/screenshots/locus-compare-slider.png)
-*Ghost Mode — drag the slider to compare original and edited versions. Keyboard accessible with arrow keys.*
+*The Component Showcase — CompareSlider with drag handle. Supports mouse, touch, and keyboard. ORIGINAL vs ENHANCED labels.*
 
 Use it for:
 
