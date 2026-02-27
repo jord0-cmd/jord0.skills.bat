@@ -6,6 +6,7 @@ description: |
   defining freeform polygon hotspots, creating hover/click states for elements in AI art,
   or performing surgical edits on specific regions of generated images. Contains four
   original techniques: CSI, IQM, HQW, and ADT.
+user-invocable: true
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -16,6 +17,12 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 Developed by [jord0-cmd](https://github.com/jord0-cmd). These techniques were invented to solve real problems that existing tools don't address: how do you add hover states to AI art? How do you map HTML onto a perspective-distorted screen in a generated image? How do you define clickable zones on irregular shapes? LOCUS answers all of these.
 
 **Requirements**: React 18+ environment. Components use hooks, refs, and modern React patterns. Works with any React framework (Next.js, Vite, Remix, etc.) or standalone React.
+
+---
+
+## Usage
+
+Describe what you want to make interactive — hover states, perspective-warped content, polygon hotspots, or before/after comparisons. LOCUS provides the four techniques (CSI, IQM, HQW, ADT) and the collaborative human-in-the-loop workflow to map coordinates visually.
 
 ---
 
@@ -2021,6 +2028,15 @@ The user drove the visual work — respect that by giving them control over the 
 **CANVAS** (Immersive Web Pipeline) provides the React Three Fiber, GSAP ScrollTrigger, and Next.js foundation that LOCUS overlays operate within. LOCUS is fully self-contained and works standalone with any web stack, but pairs naturally with CANVAS for building complete immersive experiences where 3D scenes, scroll-driven animations, and interactive AI-generated imagery work together.
 
 **OPTIC** (AI Image Generation Pipeline) provides the image generation and compositing pipeline that creates the visual assets LOCUS makes interactive. OPTIC generates scenes via Gemini models, handles multi-pass refinement (Sequential Grounding), and performs surgical inpainting with colour matching and feathered compositing. Any AI image generator works with LOCUS, but OPTIC is the recommended companion for the full creative pipeline.
+
+---
+
+## Prerequisites
+
+- React 18+ environment (Next.js, Vite, Remix, or standalone)
+- `dompurify` package for DOM sanitization (`npm install dompurify @types/dompurify`)
+- A running dev server (the tuner tools run in the browser)
+- No other external dependencies
 
 ---
 

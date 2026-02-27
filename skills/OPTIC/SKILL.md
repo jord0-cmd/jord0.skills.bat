@@ -5,6 +5,7 @@ description: |
   Gemini image models, performing surgical inpainting, running multi-pass Sequential Grounding,
   colour matching composites, or any AI image generation pipeline work. Contains the generator
   tool, prompt engineering framework, and advanced compositing techniques.
+user-invocable: true
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -15,6 +16,12 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 Developed for the [jord0.skills](https://github.com/jord0-cmd/jord0.skills) ecosystem. OPTIC encodes the complete AI image generation pipeline: prompt engineering, model invocation, multi-pass refinement, and pixel-level compositing. These techniques were developed through extensive experimentation and produce dramatically better results than naive single-pass generation.
 
 **Requirements**: Python 3.10+, `google-genai` package, `GEMINI_API_KEY` environment variable. Optional: `Pillow` + `numpy` for inpainting pipeline.
+
+---
+
+## Usage
+
+Describe what you want to generate, edit, or composite. OPTIC handles prompt engineering, model selection, and compositing pipelines. See detailed techniques below.
 
 ---
 
@@ -1036,6 +1043,15 @@ Each skill is fully self-contained and works standalone. Together they form a co
 - [ ] For inpainting: square crop, 1:1 aspect ratio forced
 - [ ] Colour matching applied to composited edits
 - [ ] Feather width appropriate for crop size (10-15px for ~250px crops)
+
+---
+
+## Prerequisites
+
+- Python 3.10+
+- `google-genai` package (`pip install google-genai`)
+- `GEMINI_API_KEY` environment variable
+- Optional: `Pillow` + `numpy` for inpainting pipeline
 
 ---
 
