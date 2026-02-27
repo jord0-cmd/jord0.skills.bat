@@ -8,6 +8,15 @@ These recipes show real workflows that chain multiple skills together. Each one 
 
 <div class="recipe-card" markdown>
 
+### [Creative Pipeline](creative-pipeline.md)
+**Skills:** OPTIC + LOCUS
+
+Generate stunning AI images, then make them interactive. The full pipeline from prompt to clickable experience. :material-new-box:{ .new-badge }
+
+</div>
+
+<div class="recipe-card" markdown>
+
 ### [Session Preservation](session-preservation.md)
 **Skills:** PORTAL + ECHO
 

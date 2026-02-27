@@ -1,7 +1,7 @@
 {
   "name": "jord0-skills",
-  "description": "10 production-grade skills for Claude Code: context portals, coding standards, project onboarding, structured debates, desktop notifications, deep research, knowledge recall, decision logging, counterarguments, and divergent thinking.",
-  "version": "1.0.0",
+  "description": "12 production-grade skills for Claude Code: AI image generation, interactive image mapping, context portals, coding standards, project onboarding, structured debates, desktop notifications, deep research, knowledge recall, decision logging, counterarguments, and divergent thinking.",
+  "version": "1.1.0",
   "author": {
     "name": "jord0.cmd",
     "url": "https://github.com/jord0-cmd"
@@ -19,6 +19,10 @@
     "decision-logging",
     "notifications",
     "brainstorming",
-    "debate"
+    "debate",
+    "image-generation",
+    "interactive-images",
+    "ai-art",
+    "creative-tools"
   ]
 }

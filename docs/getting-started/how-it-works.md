@@ -84,10 +84,11 @@ This removes ambiguity. Claude doesn't have to guess what to do — the protocol
 
 ## Skill Categories
 
-The 10 skills fall into natural groups:
+The 12 skills fall into natural groups:
 
 | Category | Skills | Purpose |
 |----------|--------|---------|
+| **Creative Tools** | OPTIC, LOCUS | AI image generation and interactive mapping |
 | **Context & Memory** | PORTAL, ECHO | Persist information across sessions |
 | **Research & Knowledge** | RECON, RECALL | Build and query a knowledge base |
 | **Cognitive Tools** | CONCLAVE, MIRROR, SPARK | Structured thinking and debate |

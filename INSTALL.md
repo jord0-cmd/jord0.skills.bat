@@ -18,7 +18,7 @@ The fastest way to install. Run these commands inside a Claude Code session:
 
 **What this does:**
 - Registers the jord0-skills marketplace as a source
-- Installs all 10 skills as the `jord0-skills` plugin
+- Installs all 12 skills as the `jord0-skills` plugin
 - Skills are namespaced: `/jord0-skills:PORTAL`, `/jord0-skills:STRICT`, etc.
 - Updates automatically when you run `/plugin update`
 
@@ -38,7 +38,7 @@ git clone https://github.com/jord0-cmd/jord0.skills.git
 claude --plugin-dir ./jord0.skills
 ```
 
-This loads all 10 skills for the current session. Add `--plugin-dir` to your shell alias for persistence:
+This loads all 12 skills for the current session. Add `--plugin-dir` to your shell alias for persistence:
 
 ```bash
 alias claude='claude --plugin-dir ~/path/to/jord0.skills'
@@ -179,5 +179,5 @@ rm -rf ~/.claude/skills/PORTAL
 Remove all jord0 skills:
 
 ```bash
-rm -rf ~/.claude/skills/{PORTAL,STRICT,FORGE,CONCLAVE,NOTIFY,RECON,RECALL,ECHO,MIRROR,SPARK}
+rm -rf ~/.claude/skills/{OPTIC,LOCUS,PORTAL,STRICT,FORGE,CONCLAVE,NOTIFY,RECON,RECALL,ECHO,MIRROR,SPARK}
 ```

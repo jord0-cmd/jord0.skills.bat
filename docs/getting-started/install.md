@@ -11,7 +11,7 @@ git clone https://github.com/jord0-cmd/jord0.skills.git
 cp -r jord0.skills/skills/* ~/.claude/skills/
 ```
 
-That's it. All 10 skills are installed. Start a Claude Code session and use them immediately.
+That's it. All 12 skills are installed. Start a Claude Code session and use them immediately.
 
 !!! note "NOTIFY is the only skill with dependencies"
     NOTIFY needs BurntToast (WSL) or libnotify (Linux) for desktop notifications. Everything else works out of the box. See [NOTIFY Setup](#notify-setup) below.
@@ -20,7 +20,7 @@ That's it. All 10 skills are installed. Start a Claude Code session and use them
 
 ## Option 2: Copy Individual Skills
 
-Don't want all 10? Grab just the ones you need:
+Don't want all 12? Grab just the ones you need:
 
 ```bash
 git clone https://github.com/jord0-cmd/jord0.skills.git
@@ -46,7 +46,7 @@ git clone https://github.com/jord0-cmd/jord0.skills.git
 claude --plugin-dir ./jord0.skills
 ```
 
-This loads all 10 skills for the current session. Make it permanent with a shell alias:
+This loads all 12 skills for the current session. Make it permanent with a shell alias:
 
 ```bash
 alias claude='claude --plugin-dir ~/path/to/jord0.skills'

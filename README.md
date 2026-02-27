@@ -9,14 +9,14 @@
    ╚════╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝  ╚═════╝
 
   C:\> jord0.skills
-  10 production skills for Claude Code
+  12 production skills for Claude Code
 
 
 ```
 
 # jord0.skills
 
-**10 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview).** Copy a folder, get a superpower.
+**12 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview).** Copy a folder, get a superpower.
 
 By [jord0.cmd](https://github.com/jord0-cmd)
 
@@ -42,9 +42,9 @@ git clone https://github.com/jord0-cmd/jord0.skills.git
 cp -r jord0.skills/skills/* ~/.claude/skills/
 ```
 
-All 10 skills are installed. No build step, no configuration. Start a Claude Code session and use them immediately.
+All 12 skills are installed. No build step, no configuration. Start a Claude Code session and use them immediately.
 
-> **Note:** NOTIFY is the only skill with external dependencies (BurntToast for WSL, libnotify for Linux). Everything else works out of the box.
+> **Note:** Most skills are zero-dependency. OPTIC requires Python + a Gemini API key, LOCUS requires a React environment, and NOTIFY requires platform-specific notification tools. Everything else works out of the box.
 
 See the [full install guide](https://jord0-cmd.github.io/jord0.skills/getting-started/install/) for alternative install methods including the plugin marketplace.
 
@@ -54,6 +54,8 @@ See the [full install guide](https://jord0-cmd.github.io/jord0.skills/getting-st
 
 | Skill | What It Does | Prerequisites |
 |-------|-------------|---------------|
+| [**OPTIC**](skills/OPTIC/) | AI image generation pipeline — prompts, multi-pass, inpainting | Python 3.10+, Gemini API key |
+| [**LOCUS**](skills/LOCUS/) | Make static images interactive — hover states, warps, hotspots | React 18+ |
 | [**PORTAL**](skills/PORTAL/) | Save and restore session context across sessions and machines | None |
 | [**STRICT**](skills/STRICT/) | Non-negotiable coding standards — 11 critical rules | None |
 | [**FORGE**](skills/FORGE/) | Onboard any codebase — generates CLAUDE.md automatically | None |
@@ -119,7 +121,7 @@ The design principles:
 1. **Self-contained** — each skill works by copying one folder
 2. **No lock-in** — standard markdown, standard JSON, no proprietary formats
 3. **Prerequisites are documented** — if a skill needs something, it tells you
-4. **Quality over quantity** — 10 skills that work perfectly > 100 that kinda work
+4. **Quality over quantity** — 12 skills that work perfectly > 100 that kinda work
 
 ---
 

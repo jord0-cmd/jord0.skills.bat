@@ -21,7 +21,7 @@ git clone https://github.com/jord0-cmd/jord0.skills.git
 cp -r jord0.skills/skills/* ~/.claude/skills/
 ```
 
-This installs all 10 skills. We'll be using PORTAL for this walkthrough.
+This installs all 12 skills. We'll be using PORTAL for this walkthrough.
 
 ---
 

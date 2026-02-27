@@ -1,8 +1,17 @@
 # Skills Overview
 
-10 skills. Zero dependencies (except NOTIFY). Copy a folder, get a superpower.
+12 skills. Zero dependencies (except NOTIFY and OPTIC). Copy a folder, get a superpower.
 
 ---
+
+## Creative Tools
+
+Tools that make Claude generate and interact. :material-new-box:{ .new-badge }
+
+| Skill | What It Does | Invoke |
+|-------|-------------|--------|
+| [**OPTIC**](optic.md) | AI image generation pipeline — prompts, multi-pass, inpainting | Describe what you want |
+| [**LOCUS**](locus.md) | Make static images interactive — hover states, perspective warps, polygon hotspots | Describe what to map |
 
 ## Context & Memory
 
@@ -52,4 +61,4 @@ Tools that let Claude reach through the screen.
 ---
 
 !!! tip "Recommended combo"
-    Start every session with `/strict`, then `/forge` on new projects. Use `/portal` to save context before closing. Use `/recon` + `/recall` to build persistent knowledge. That's the foundation — everything else builds on it.
+    Start every session with `/strict`, then `/forge` on new projects. Use `/portal` to save context before closing. Use `/recon` + `/recall` to build persistent knowledge. For visual projects, use `/optic` to generate images and `/locus` to make them interactive. That's the foundation — everything else builds on it.

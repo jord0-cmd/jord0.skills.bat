@@ -196,6 +196,7 @@
 .tag-research { background: rgba(0, 255, 247, 0.15) !important; color: var(--terminal-cyan) !important; }
 .tag-cognitive { background: rgba(255, 68, 68, 0.15) !important; color: #ff6b6b !important; }
 .tag-system { background: rgba(149, 128, 255, 0.15) !important; color: #9580ff !important; }
+.tag-creative { background: rgba(255, 107, 53, 0.15) !important; color: #ff6b35 !important; }
 
 /* ── ASCII art hero ── */
 .hero-ascii {

@@ -1,6 +1,6 @@
 site_name: jord0.skills
 site_url: https://jord0-cmd.github.io/jord0.skills
-site_description: "10 production skills for Claude Code. Copy a folder, get a superpower."
+site_description: "12 production skills for Claude Code. Copy a folder, get a superpower."
 site_author: jord0.cmd
 
 repo_url: https://github.com/jord0-cmd/jord0.skills
@@ -88,6 +88,8 @@ nav:
     - How Skills Work: getting-started/how-it-works.md
   - Skills:
     - Overview: skills/index.md
+    - OPTIC: skills/optic.md
+    - LOCUS: skills/locus.md
     - PORTAL: skills/portal.md
     - STRICT: skills/strict.md
     - FORGE: skills/forge.md
@@ -100,6 +102,7 @@ nav:
     - NOTIFY: skills/notify.md
   - Recipes:
     - Overview: recipes/index.md
+    - Creative Pipeline: recipes/creative-pipeline.md
     - Session Preservation: recipes/session-preservation.md
     - Cross-Machine Workflow: recipes/cross-machine.md
     - Decision Audit Trail: recipes/decision-trail.md
