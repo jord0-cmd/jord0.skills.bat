@@ -19,8 +19,8 @@ AI image generators produce stunning static images. But static is dead. You want
 
 Traditional image maps are rectangles on flat images. AI-generated scenes have perspective, distortion, and irregular shapes. CSS `top/left/width/height` can't map content onto a tilted screen. LOCUS can.
 
-![LOCUS Control Room Demo](../assets/screenshots/locus-control-room.png)
-*A retro-futuristic control room with HQW-warped terminals, CSI hover states, and ADT polygon hotspots — all built with LOCUS.*
+![LOCUS — Start With Any AI-Generated Image](../assets/screenshots/locus-raw-scene.png)
+*A static AI-generated image. No interactivity. No hover states. LOCUS makes it come alive.*
 
 ---
 
@@ -75,14 +75,17 @@ Scroll past the gauge → needle sweeps from 0 to maximum
 
 CSI also has an **Analogue Fork** — CSS-only state changes (brightness, hue-rotate, drop-shadow) for when you don't have access to an AI image generator.
 
+![CSI Zones](../assets/screenshots/locus-csi-zones.png)
+*CSI in action — the gauge panel and rotary phone both have active hover zones with state overlays.*
+
 ---
 
 ## IQM — Interactive Quad Mapping
 
 The visual coordinate tuner. Instead of guessing pixel positions, drag corners on the image.
 
-![LOCUS Debug Overlay](../assets/screenshots/locus-debug-overlay.png)
-*The DebugTuner showing quad wireframes, ADT polygon boundaries, and live coordinate readout.*
+![IQM Tuner](../assets/screenshots/locus-iqm-tuner.png)
+*IQM in action — drag the green corners to map the RIGHT_MONITOR quad. Click COPY POSITIONS when it looks right.*
 
 **Before IQM**: Guess percentages, screenshot, compare, nudge, repeat. 4-5 rounds of trial and error.
 
@@ -109,6 +112,9 @@ Your HTML terminal text  →  matrix3d() transform  →  Perfectly mapped onto t
 
 The math is 47 lines of linear algebra. You never touch it — you just drag corners in IQM and paste the coordinates.
 
+![HQW Warp](../assets/screenshots/locus-hqw-warp.png)
+*HQW warping live terminal text onto a perspective CRT monitor. The content is real HTML, not an image.*
+
 ---
 
 ## ADT — Area Drawing Tool
@@ -124,6 +130,9 @@ Not everything is a rectangle. Gauges are circular. Smoke wisps are organic. Whi
 
 The polygons export as percentage-based vertex arrays — responsive at any size.
 
+![ADT Debug Overlay](../assets/screenshots/locus-debug-overlay.png)
+*The debug wireframe showing all mapped zones — IQM quads (LEFT_MONITOR, RIGHT_MONITOR) and an ADT polygon (rotary phone). Toggle with Ctrl+Shift+D.*
+
 ---
 
 ## CompareSlider — Before/After Ghost Mode
@@ -131,7 +140,7 @@ The polygons export as percentage-based vertex arrays — responsive at any size
 Drag a slider to compare two versions of the same image.
 
 ![LOCUS CompareSlider](../assets/screenshots/locus-compare-slider.png)
-*Ghost Mode — drag the slider to compare original and edited versions.*
+*Ghost Mode — drag the slider to compare original and edited versions. Keyboard accessible with arrow keys.*
 
 Use it for:
 
