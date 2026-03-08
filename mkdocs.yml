@@ -103,6 +103,7 @@ nav:
     - REFRAX: skills/refrax.md
   - Recipes:
     - Overview: recipes/index.md
+    - Code Review Pipeline: recipes/code-review-pipeline.md
     - Creative Pipeline: recipes/creative-pipeline.md
     - Session Preservation: recipes/session-preservation.md
     - Cross-Machine Workflow: recipes/cross-machine.md

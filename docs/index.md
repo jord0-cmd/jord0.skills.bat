@@ -9,7 +9,7 @@
    ╚════╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝  ╚═════╝
 
             C:\> jord0.skills
-    12 production skills for Claude Code
+    13 production skills for Claude Code
 ```
 
 </div>
@@ -18,7 +18,7 @@
 
 # Copy a Folder. Get a Superpower.
 
-**jord0.skills** is a collection of 12 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview). No build step. No dependencies. No configuration.
+**jord0.skills** is a collection of 13 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview). No build step. No dependencies. No configuration.
 
 ## Install — Two Commands
 
@@ -27,7 +27,7 @@ git clone https://github.com/jord0-cmd/jord0.skills.git
 cp -r jord0.skills/skills/* ~/.claude/skills/
 ```
 
-That's it. All 12 skills are installed. Start a Claude Code session and use them immediately.
+That's it. All 13 skills are installed. Start a Claude Code session and use them immediately.
 
 !!! note "Most skills are zero-dependency"
     OPTIC requires Python + a Gemini API key, LOCUS requires a React environment, and NOTIFY needs BurntToast (WSL) or libnotify (Linux). Everything else works out of the box. See the [Installation Guide](getting-started/install.md) for details.
@@ -42,6 +42,12 @@ That's it. All 12 skills are installed. Start a Claude Code session and use them
 |-------|-------------|
 | [**OPTIC**](skills/optic.md) | AI image generation pipeline. Prompt engineering, multi-pass sequential grounding, surgical inpainting, colour-matched compositing. |
 | [**LOCUS**](skills/locus.md) | Make static images interactive. Hover states, perspective warping, polygon hotspots, visual coordinate mapping. Four original techniques. |
+
+### Development :material-new-box:{ .new-badge }
+
+| Skill | What It Does |
+|-------|-------------|
+| [**REFRAX**](skills/refrax.md) | Visual code comprehension. Interactive logic spines, risk dashboards, diff views, glossary. Turn code into a visual story. |
 
 ### Context & Memory
 

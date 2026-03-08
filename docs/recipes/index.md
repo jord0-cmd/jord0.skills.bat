@@ -17,6 +17,15 @@ Generate stunning AI images, then make them interactive. The full pipeline from 
 
 <div class="recipe-card" markdown>
 
+### [Code Review Pipeline](code-review-pipeline.md)
+**Skills:** REFRAX + STRICT + ECHO
+
+AI wrote the code. REFRAX visualises it. STRICT validates it. ECHO records the decision. The complete review workflow. :material-new-box:{ .new-badge }
+
+</div>
+
+<div class="recipe-card" markdown>
+
 ### [Session Preservation](session-preservation.md)
 **Skills:** PORTAL + ECHO
 
