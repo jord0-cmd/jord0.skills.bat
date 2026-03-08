@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REFRAX</title>
+<style>
+/* ── Reset & Theme ──────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080c14;--surface:#0d1520;--border:#1e2d42;--text:#e2e8f0;--dim:#7a8ba3;
+  --cyan:#22d3ee;--amber:#fbbf24;--violet:#a78bfa;--emerald:#34d399;--rose:#fb7185;
+  --glow:rgba(34,211,238,0.5);--glow-amber:rgba(251,191,36,0.4);
+  --glow-rose:rgba(251,113,133,0.4);--glow-violet:rgba(167,139,250,0.4);
+  --glow-emerald:rgba(52,211,153,0.4);
+  --scanline:rgba(255,255,255,0.015);
+  --connector:#2a3a52;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Cascadia Code','Fira Code','JetBrains Mono',monospace;font-size:15px;overflow-x:hidden}
+body{
+  background-image:
+    linear-gradient(var(--scanline) 1px, transparent 1px),
+    linear-gradient(90deg, var(--scanline) 1px, transparent 1px);
+  background-size:100% 3px, 50px 100%
+}
+
+/* ── Scrollbars ────────────────────────────────────────────── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--dim)}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+#app{display:flex;flex-direction:column;height:100vh;padding:16px;gap:12px}
+
+/* ── Header ─────────────────────────────────────────────────── */
+header{display:flex;align-items:center;gap:12px;flex-shrink:0}
+header h1{
+  font-size:18px;letter-spacing:5px;color:var(--cyan);flex-shrink:0;
+  text-shadow:0 0 12px var(--glow),0 0 30px rgba(34,211,238,0.2);
+  animation:titlePulse 4s ease-in-out infinite
+}
+@keyframes titlePulse{
+  0%,100%{text-shadow:0 0 12px var(--glow),0 0 30px rgba(34,211,238,0.15)}
+  50%{text-shadow:0 0 20px var(--glow),0 0 50px rgba(34,211,238,0.35)}
+}
+#summary-bar{
+  flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;
+  padding:7px 12px;font-size:12px;color:var(--dim);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap
+}
+#confidence-badge{
+  font-size:11px;padding:3px 9px;border-radius:10px;border:1px solid var(--border);
+  color:var(--dim);flex-shrink:0;transition:color .3s,border-color .3s;
+  cursor:help;position:relative
+}
+#confidence-badge .conf-tip{
+  display:none;position:absolute;top:calc(100% + 8px);right:0;width:260px;
+  background:var(--surface);border:1px solid var(--border);border-radius:6px;
+  padding:10px 12px;font-size:11px;line-height:1.6;color:var(--text);
+  box-shadow:0 4px 20px rgba(0,0,0,0.5);z-index:100;white-space:normal;text-align:left
+}
+#confidence-badge:hover .conf-tip{display:block}
+#mode-btn{
+  height:28px;padding:0 12px;border-radius:6px;border:1px solid var(--border);
+  background:var(--surface);color:var(--dim);cursor:pointer;font-family:inherit;
+  font-size:11px;font-weight:700;transition:all .2s;letter-spacing:2px;flex-shrink:0
+}
+#mode-btn:hover{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 8px rgba(34,211,238,0.15)}
+#mode-btn.pro{color:var(--cyan);border-color:var(--cyan);text-shadow:0 0 6px var(--glow);box-shadow:0 0 12px rgba(34,211,238,0.2)}
+#help-btn{
+  width:28px;height:28px;border-radius:50%;border:1px solid var(--border);
+  background:var(--surface);color:var(--dim);cursor:pointer;font-size:13px;
+  display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0
+}
+#help-btn:hover{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 8px rgba(34,211,238,0.2)}
+
+/* ── Main Area — two-panel, full height ───────────────────── */
+#main{flex:1;display:flex;gap:12px;min-height:0;overflow:hidden}
+
+/* ── Spine Panel — full height, wider ─────────────────────── */
+#spine-panel{
+  width:420px;min-width:320px;flex-shrink:0;
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  overflow-y:auto;padding:14px 14px 20px;
+  box-shadow:inset 0 0 80px rgba(0,0,0,0.5)
+}
+/* Spine header with view tabs + file indicator */
+#spine-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-shrink:0}
+#spine-view-tabs{display:flex;gap:0}
+.spine-tab{
+  padding:4px 12px;background:none;border:1px solid var(--border);
+  color:var(--dim);font-family:inherit;font-size:10px;font-weight:600;
+  letter-spacing:1px;cursor:pointer;transition:all .18s;text-transform:uppercase
+}
+.spine-tab:first-child{border-radius:4px 0 0 4px}
+.spine-tab:last-child{border-radius:0 4px 4px 0;border-left:none}
+.spine-tab.active{color:var(--cyan);border-color:var(--cyan);background:rgba(34,211,238,0.06);text-shadow:0 0 8px rgba(34,211,238,0.4)}
+.spine-tab:hover:not(.active){color:var(--text);border-color:var(--text)}
+#overview-btn{
+  padding:4px 9px;border-radius:4px;border:1px solid var(--border);
+  background:none;color:var(--dim);font-family:inherit;font-size:10px;
+  cursor:pointer;transition:all .18s;letter-spacing:0.5px
+}
+#overview-btn:hover{color:var(--cyan);border-color:var(--cyan)}
+#overview-btn.active{color:var(--cyan);border-color:var(--cyan);opacity:0.6;pointer-events:none}
+#spine-file-indicator{
+  flex:1;font-size:10px;color:var(--dim);text-align:right;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+#spine-file-indicator .file-path{color:var(--cyan)}
+#spine-meta{margin-bottom:14px}
+
+/* File tree view */
+#spine-view-files{padding:4px 0}
+.file-tree-item{
+  border-radius:4px;
+  transition:background .15s,border-color .15s;
+  border:1px solid transparent;margin-bottom:2px
+}
+.file-tree-item.active-file{background:rgba(34,211,238,0.06);border-color:rgba(34,211,238,0.25)}
+.file-tree-path{
+  font-size:12px;color:var(--cyan);font-weight:600;cursor:pointer;
+  padding:6px 10px;display:flex;align-items:center;gap:6px;
+  border-radius:4px;transition:background .15s
+}
+.file-tree-path:hover{background:rgba(34,211,238,0.04)}
+.file-tree-lang{font-size:10px;color:var(--dim)}
+.file-tree-chevron{
+  font-size:8px;color:var(--dim);transition:transform .2s;display:inline-block;
+  padding:4px 8px 4px 2px;cursor:pointer;margin-right:-4px
+}
+.file-tree-chevron:hover{color:var(--cyan)}
+.file-tree-item.open .file-tree-chevron{transform:rotate(90deg)}
+.file-tree-node-count{font-size:9px;color:var(--dim);margin-left:auto}
+.file-tree-functions{margin-top:0;padding-left:12px;overflow:hidden;max-height:0;transition:max-height .3s ease}
+.file-tree-item.open .file-tree-functions{max-height:2000px}
+.file-tree-fn{
+  padding:3px 8px;font-size:11px;color:var(--dim);cursor:pointer;
+  border-left:2px solid var(--border);margin-bottom:1px;
+  transition:all .15s
+}
+.file-tree-fn:hover{color:var(--text);border-left-color:var(--cyan);background:rgba(34,211,238,0.03)}
+.file-tree-fn.active-fn{color:var(--cyan);border-left-color:var(--cyan)}
+.file-tree-fn .fn-type{
+  display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;vertical-align:middle
+}
+.fn-type-step{background:var(--cyan)}
+.fn-type-decision{background:var(--violet)}
+.fn-type-side_effect{background:var(--amber)}
+.fn-type-outcome{background:var(--emerald)}
+.file-tree-all{
+  padding:6px 10px;font-size:12px;color:var(--cyan);cursor:pointer;font-weight:600;
+  border-radius:4px;margin-bottom:4px;display:flex;align-items:center;gap:6px;
+  transition:background .15s;border:1px solid transparent
+}
+.file-tree-all:hover{background:rgba(34,211,238,0.04)}
+.file-tree-all.filter-active,.file-tree-item.filter-active{background:rgba(34,211,238,0.08);border-color:rgba(34,211,238,0.3)}
+.file-tree-badge{font-size:9px;padding:0 5px;border-radius:8px;margin-left:3px;line-height:16px;display:inline-block}
+.file-tree-badge-risk{color:var(--rose);border:1px solid rgba(251,113,133,0.3)}
+.file-tree-badge-diff{color:var(--amber);border:1px solid rgba(251,191,36,0.3)}
+#spine-meta .spine-label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:3px}
+#spine-title{font-size:13px;color:var(--cyan);margin-bottom:2px;text-shadow:0 0 8px rgba(34,211,238,0.3)}
+#spine-trigger{font-size:11px;color:var(--dim);font-style:italic;line-height:1.4}
+#spine-svg{width:100%;height:auto;display:block}
+
+/* ── SVG Node Styles — no transform on hover (jitter fix) ── */
+.spine-node{cursor:pointer}
+.spine-node .node-bg{transition:filter .18s ease,stroke-opacity .18s ease}
+.spine-node.selected .node-bg{
+  filter:drop-shadow(0 0 10px var(--node-glow,rgba(34,211,238,0.6))) brightness(1.25);
+  stroke-opacity:1 !important
+}
+.spine-node:hover .node-bg{
+  filter:drop-shadow(0 0 7px var(--node-glow,rgba(34,211,238,0.4))) brightness(1.15);
+  stroke-opacity:1 !important
+}
+.spine-node.selected:hover .node-bg{
+  filter:drop-shadow(0 0 14px var(--node-glow,rgba(34,211,238,0.8))) brightness(1.35)
+}
+.spine-node.clicking .node-bg{
+  filter:drop-shadow(0 0 20px var(--node-glow,rgba(34,211,238,1))) brightness(1.5) !important;
+  transition:filter .05s ease
+}
+.node-label{fill:var(--text);font-family:inherit;font-size:12.5px;dominant-baseline:central;pointer-events:none}
+.node-number{fill:var(--dim);font-family:inherit;font-size:10px;font-weight:bold;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+
+/* Node type colours */
+.node-step .node-bg{fill:var(--bg);stroke:var(--cyan);stroke-width:1.5;filter:drop-shadow(0 0 3px rgba(34,211,238,0.15))}
+.node-decision .node-bg{fill:var(--bg);stroke:var(--violet);stroke-width:1.5;filter:drop-shadow(0 0 3px rgba(167,139,250,0.15))}
+.node-side_effect .node-bg{fill:var(--bg);stroke:var(--amber);stroke-width:1.5;filter:drop-shadow(0 0 3px rgba(251,191,36,0.15))}
+.node-outcome-success .node-bg{fill:var(--bg);stroke:var(--emerald);stroke-width:1.5;filter:drop-shadow(0 0 3px rgba(52,211,153,0.15))}
+.node-outcome-fail .node-bg{fill:var(--bg);stroke:var(--rose);stroke-width:1.5;filter:drop-shadow(0 0 3px rgba(251,113,133,0.15))}
+
+/* Connectors */
+.spine-connector{stroke:var(--connector);stroke-width:2;fill:none;animation:connectorBreathe 3s ease-in-out infinite}
+@keyframes connectorBreathe{0%,100%{opacity:0.5}50%{opacity:1}}
+.spine-branch-line{stroke:var(--violet);stroke-width:1.5;fill:none;stroke-dasharray:4 3;opacity:0.45;animation:connectorBreathe 3s ease-in-out infinite}
+.branch-label{fill:var(--dim);font-size:9px;font-family:inherit;pointer-events:none}
+
+/* Risk badge */
+.risk-badge{pointer-events:none}
+.risk-badge-circle{fill:var(--rose);animation:riskPulse 2.2s ease-in-out infinite}
+.risk-badge-text{fill:#fff;font-size:7.5px;font-weight:bold;text-anchor:middle;dominant-baseline:central}
+@keyframes riskPulse{
+  0%,100%{r:6.5;filter:drop-shadow(0 0 3px rgba(251,113,133,0.6))}
+  50%{r:8;filter:drop-shadow(0 0 7px rgba(251,113,133,0.9))}
+}
+
+/* Diff badge */
+.diff-badge{font-size:9px;font-weight:bold;pointer-events:none}
+.diff-added{fill:var(--emerald)}
+.diff-modified{fill:var(--amber)}
+.diff-deleted{fill:var(--rose)}
+
+/* Number circle */
+.node-num-ring{fill:var(--bg);stroke:var(--border);stroke-width:1}
+
+/* ── Inspector Panel — full height ──────────────────────────── */
+#inspector{
+  flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  display:flex;flex-direction:column;overflow:visible;
+  box-shadow:inset 0 0 80px rgba(0,0,0,0.5)
+}
+#inspector-header{padding:12px 16px 0;flex-shrink:0;overflow:visible;position:relative;z-index:10}
+
+/* Tech stack bar — small, inside inspector header */
+#tech-stack-bar{
+  display:flex;gap:5px;flex-wrap:wrap;padding:0 0 10px;align-items:center
+}
+.tech-chip{
+  padding:2px 8px;border-radius:10px;font-size:10px;
+  border:1px solid var(--border);color:var(--dim);cursor:default;
+  transition:all .2s;position:relative
+}
+.tech-chip.tc-lang{border-color:rgba(34,211,238,0.4);color:var(--cyan)}
+.tech-chip.tc-framework{border-color:rgba(167,139,250,0.4);color:var(--violet)}
+.tech-chip.tc-database{border-color:rgba(251,191,36,0.4);color:var(--amber)}
+.tech-chip.tc-security{border-color:rgba(52,211,153,0.4);color:var(--emerald)}
+.tech-chip.tc-infra{border-color:rgba(251,113,133,0.4);color:var(--rose)}
+.tech-chip:hover{filter:brightness(1.3);box-shadow:0 0 8px rgba(255,255,255,0.06)}
+.tech-chip-sep{width:1px;height:16px;background:var(--border);margin:0 3px;align-self:center}
+.tech-chip .tech-tooltip{
+  display:none;position:absolute;top:calc(100% + 6px);left:50%;
+  transform:translateX(-50%);padding:5px 9px;background:var(--bg);
+  border:1px solid var(--border);border-radius:5px;font-size:10px;
+  white-space:nowrap;z-index:30;color:var(--dim);
+  box-shadow:0 4px 20px rgba(0,0,0,0.5)
+}
+.tech-chip:hover .tech-tooltip{display:block}
+
+/* Inspector title */
+#inspector-title{
+  font-size:14px;color:var(--text);margin-bottom:10px;
+  min-height:22px;transition:color .2s
+}
+#inspector-title.empty-state{color:var(--dim);font-style:italic;font-size:12px}
+
+/* Tabs */
+#inspector-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tab-btn{
+  padding:6px 12px;background:none;border:none;
+  border-bottom:2px solid transparent;color:var(--dim);
+  font-family:inherit;font-size:10px;font-weight:600;letter-spacing:1px;
+  cursor:pointer;transition:all .18s;text-transform:uppercase
+}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--cyan);border-bottom-color:var(--cyan);text-shadow:0 0 8px rgba(34,211,238,0.5)}
+/* Separator between node-tabs and global-tabs */
+.tab-separator{width:1px;background:var(--border);margin:4px 4px;align-self:stretch}
+
+#inspector-body{flex:1;overflow-y:auto;padding:16px}
+.tab-content{display:none}
+.tab-content.active{display:block}
+#tab-plain{font-size:14px;line-height:1.8;color:var(--text)}
+#tab-dev{font-size:13px;line-height:1.7;color:var(--dim)}
+#tab-dev .file-ref{
+  color:var(--cyan);font-size:11px;margin-top:10px;padding:5px 10px;
+  background:rgba(34,211,238,0.05);border:1px solid rgba(34,211,238,0.15);
+  border-radius:4px;display:inline-block
+}
+
+/* Inline risk warning in Plain tab */
+.inline-risk-warning{
+  margin-top:12px;padding:10px 12px;border-radius:5px;
+  border:1px solid rgba(251,113,133,0.25);
+  background:rgba(251,113,133,0.04);font-size:12px;line-height:1.55
+}
+.inline-risk-warning .irw-title{color:var(--rose);font-weight:700;margin-bottom:3px;font-size:12px}
+.inline-risk-warning .irw-text{color:var(--dim)}
+
+/* Code viewer */
+#tab-code{font-size:13px}
+#tab-code .code-header{font-size:12px;color:var(--dim);margin-bottom:8px}
+#tab-code pre{
+  background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  padding:12px;overflow-x:auto;line-height:1.65;
+  box-shadow:inset 0 0 40px rgba(0,0,0,0.4)
+}
+#tab-code .line-num{color:var(--dim);display:inline-block;width:3em;text-align:right;margin-right:1em;user-select:none;opacity:0.4}
+#tab-code .line-highlight{
+  background:rgba(34,211,238,0.07);display:block;margin:0 -12px;padding:0 12px;
+  border-left:2px solid rgba(34,211,238,0.4)
+}
+
+/* ── Risks tab (all risks dashboard) ───────────────────────── */
+#tab-risks .risk-card{
+  padding:12px;background:var(--bg);
+  border:1px solid var(--border);border-radius:6px;cursor:pointer;
+  transition:border-color .2s,box-shadow .2s;margin-bottom:8px
+}
+#tab-risks .risk-card:hover{border-color:var(--rose);box-shadow:0 0 12px rgba(251,113,133,0.1)}
+#tab-risks .risk-card.severity-medium:hover{border-color:var(--amber);box-shadow:0 0 12px rgba(251,191,36,0.1)}
+#tab-risks .risk-card.severity-low:hover{border-color:var(--cyan);box-shadow:0 0 12px rgba(34,211,238,0.1)}
+#tab-risks .severity-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;flex-shrink:0}
+#tab-risks .severity-dot.high{background:var(--rose);box-shadow:0 0 5px rgba(251,113,133,0.6)}
+#tab-risks .severity-dot.medium{background:var(--amber);box-shadow:0 0 5px rgba(251,191,36,0.6)}
+#tab-risks .severity-dot.low{background:var(--cyan);box-shadow:0 0 5px rgba(34,211,238,0.6)}
+#tab-risks .card-title{font-size:13px;font-weight:700;margin-bottom:4px;display:flex;align-items:center}
+#tab-risks .card-desc{font-size:12px;color:var(--dim);line-height:1.5}
+#tab-risks .card-effort{font-size:10px;color:var(--dim);margin-top:5px;opacity:0.65}
+#tab-risks .card-fix{margin-top:6px;padding:7px 9px;background:rgba(52,211,153,0.04);border:1px solid rgba(52,211,153,0.18);border-radius:4px}
+#tab-risks .card-fix-title{font-size:10px;color:var(--emerald);font-weight:700;margin-bottom:3px}
+#tab-risks .card-fix-step{font-size:10px;color:var(--dim);padding-left:12px;text-indent:-8px;margin-bottom:2px;line-height:1.35}
+#tab-risks .card-fix-step::before{content:"- ";color:var(--emerald)}
+.copy-prompt-btn{
+  margin-top:7px;padding:3px 10px;background:transparent;
+  border:1px solid var(--violet);border-radius:4px;color:var(--violet);
+  font-family:inherit;font-size:10px;cursor:pointer;
+  transition:all .2s;letter-spacing:0.5px
+}
+.copy-prompt-btn:hover{background:var(--violet);color:var(--bg);box-shadow:0 0 10px rgba(167,139,250,0.3)}
+.copy-prompt-btn.copied{border-color:var(--emerald);color:var(--emerald)}
+
+/* ── Diff tab ──────────────────────────────────────────────── */
+#tab-diff .diff-meta{font-size:11px;color:var(--dim);margin-bottom:8px;display:flex;gap:12px;flex-wrap:wrap}
+#tab-diff .diff-meta .label{color:var(--text)}
+.diff-hunk{
+  margin-bottom:10px;background:var(--bg);
+  border:1px solid var(--border);border-radius:6px;overflow:hidden
+}
+.diff-hunk-header{
+  padding:6px 11px;font-size:10px;color:var(--dim);letter-spacing:0.5px;
+  background:rgba(255,255,255,0.025);border-bottom:1px solid var(--border);
+  cursor:pointer;transition:color .15s
+}
+.diff-hunk-header:hover{color:var(--cyan)}
+.diff-hunk pre{padding:8px 11px;font-size:11px;line-height:1.65;overflow-x:auto}
+.diff-line-add{color:var(--emerald);background:rgba(52,211,153,0.06);display:block}
+.diff-line-del{color:var(--rose);background:rgba(251,113,133,0.06);display:block}
+.diff-line-ctx{color:var(--dim);display:block}
+.diff-line-num{display:inline-block;width:3.5em;text-align:right;margin-right:0.8em;opacity:0.4;user-select:none}
+.diff-explanation{
+  font-size:11px;color:var(--dim);padding:7px 11px;
+  border-top:1px solid var(--border);font-style:italic;line-height:1.45
+}
+
+/* ── Glossary tab ──────────────────────────────────────────── */
+.glossary-item{
+  padding:7px 0;border-bottom:1px solid rgba(30,45,66,0.6);cursor:pointer
+}
+.glossary-item:last-child{border-bottom:none}
+.glossary-term{color:var(--cyan);font-size:13px;font-weight:700;transition:text-shadow .2s}
+.glossary-item:hover .glossary-term{text-shadow:0 0 8px rgba(34,211,238,0.4)}
+.glossary-def{
+  font-size:12px;color:var(--dim);margin-top:4px;line-height:1.5;
+  overflow:hidden;max-height:0;transition:max-height .25s ease,margin-top .25s ease
+}
+.glossary-item.open .glossary-def{max-height:100px}
+
+/* Glossary auto-links */
+.glossary-link{color:var(--cyan);border-bottom:1px dotted rgba(34,211,238,0.5);cursor:help;position:relative}
+.glossary-link:hover::after{
+  content:attr(data-def);position:absolute;top:100%;left:0;
+  padding:5px 9px;background:var(--bg);border:1px solid var(--cyan);
+  border-radius:5px;font-size:10px;white-space:normal;max-width:260px;
+  margin-top:5px;z-index:50;color:var(--dim);
+  box-shadow:0 4px 20px rgba(0,0,0,0.6);line-height:1.45;
+  pointer-events:none
+}
+
+/* Empty state */
+.empty-state{color:var(--dim);font-size:12px;font-style:italic;text-align:center;padding:40px 20px;line-height:1.7}
+
+/* ── Help Modal ─────────────────────────────────────────────── */
+#help-modal{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.75);z-index:100;
+  align-items:center;justify-content:center;
+  backdrop-filter:blur(3px)
+}
+#help-modal.visible{display:flex}
+#help-content{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:28px;max-width:540px;width:90%;max-height:82vh;overflow-y:auto;
+  box-shadow:0 0 60px rgba(0,0,0,0.8),0 0 30px rgba(34,211,238,0.05)
+}
+#help-content h2{color:var(--cyan);margin-bottom:4px;font-size:18px;letter-spacing:3px;text-shadow:0 0 12px var(--glow)}
+#help-content .tagline{font-size:12px;color:var(--dim);font-style:italic;margin-bottom:18px}
+#help-content h3{color:var(--text);font-size:12px;margin:14px 0 6px;letter-spacing:1px;text-transform:uppercase}
+#help-content p{font-size:12px;color:var(--dim);line-height:1.6;margin-bottom:8px}
+#help-content kbd{
+  display:inline-block;padding:1px 6px;background:var(--bg);
+  border:1px solid var(--border);border-radius:3px;font-size:11px;color:var(--text)
+}
+#help-content .legend{margin-top:12px;display:flex;flex-direction:column;gap:7px}
+#help-content .legend-item{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--dim)}
+#help-content .legend-swatch{width:14px;height:14px;border-radius:3px;border:2px solid;flex-shrink:0}
+#help-content .close-btn{
+  margin-top:20px;padding:7px 20px;background:var(--cyan);color:var(--bg);
+  border:none;border-radius:6px;font-family:inherit;font-size:12px;cursor:pointer;
+  font-weight:700;letter-spacing:1px;transition:filter .2s;
+  box-shadow:0 0 16px rgba(34,211,238,0.3)
+}
+#help-content .close-btn:hover{filter:brightness(1.15)}
+
+/* ── Syntax Highlight ───────────────────────────────────────── */
+.syn-keyword{color:var(--violet)}
+.syn-string{color:var(--emerald)}
+.syn-comment{color:var(--dim);font-style:italic}
+.syn-number{color:var(--amber)}
+.syn-decorator{color:var(--cyan)}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>REFRAX</h1>
+    <div id="summary-bar">Loading analysis...</div>
+    <span id="confidence-badge"></span>
+    <button id="mode-btn" onclick="toggleMode()" title="Toggle Novice/Pro mode">NOV</button>
+    <button id="help-btn" onclick="toggleHelp()">?</button>
+  </header>
+
+  <div id="main">
+    <!-- ── Spine Panel — full height, wider ─────────────────── -->
+    <div id="spine-panel">
+      <div id="spine-header">
+        <div id="spine-view-tabs">
+          <button class="spine-tab active" data-view="spine" onclick="switchSpineView('spine')">Spine</button>
+          <button class="spine-tab" data-view="files" onclick="switchSpineView('files')">Files</button>
+        </div>
+        <button id="overview-btn" onclick="showOverview()" title="Return to project overview">Overview</button>
+        <div id="spine-file-indicator"></div>
+      </div>
+      <div id="spine-meta">
+        <div class="spine-label">Logic Spine</div>
+        <div id="spine-title"></div>
+        <div id="spine-trigger"></div>
+      </div>
+      <div id="spine-view-spine">
+      <svg id="spine-svg">
+        <defs>
+          <filter id="glowSm" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="g"/>
+            <feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glowMed" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="g"/>
+            <feMerge><feMergeNode in="g"/><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glowHot" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="g"/>
+            <feMerge><feMergeNode in="g"/><feMergeNode in="g"/><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+      </svg>
+      </div>
+      <div id="spine-view-files" style="display:none"></div>
+    </div>
+
+    <!-- ── Inspector — full height, all tabs ────────────────── -->
+    <div id="inspector">
+      <div id="inspector-header">
+        <div id="tech-stack-bar"></div>
+        <div id="inspector-title" class="empty-state">Click a node to inspect</div>
+        <div id="inspector-tabs">
+          <button class="tab-btn active" data-tab="plain" onclick="switchTab('plain')">Plain</button>
+          <button class="tab-btn" data-tab="dev" onclick="switchTab('dev')">Dev</button>
+          <button class="tab-btn" data-tab="code" onclick="switchTab('code')">Code</button>
+          <div class="tab-separator"></div>
+          <button class="tab-btn" data-tab="risks" onclick="switchTab('risks')">Risks</button>
+          <button class="tab-btn" data-tab="diff" onclick="switchTab('diff')">Diff</button>
+          <button class="tab-btn" data-tab="glossary" onclick="switchTab('glossary')">Glossary</button>
+        </div>
+      </div>
+      <div id="inspector-body">
+        <div id="tab-plain" class="tab-content active">
+          <div class="empty-state">Select a step from the logic spine to see what it does in plain English.</div>
+        </div>
+        <div id="tab-dev" class="tab-content">
+          <div class="empty-state">Technical details will appear here.</div>
+        </div>
+        <div id="tab-code" class="tab-content">
+          <div class="empty-state">Source code will appear here.</div>
+        </div>
+        <div id="tab-risks" class="tab-content">
+          <div class="empty-state">Loading risks...</div>
+        </div>
+        <div id="tab-diff" class="tab-content">
+          <div class="empty-state">Loading diff...</div>
+        </div>
+        <div id="tab-glossary" class="tab-content">
+          <div class="empty-state">Loading glossary...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Help Modal ──────────────────────────────────────────── -->
+<div id="help-modal" onclick="if(event.target===this)toggleHelp()">
+  <div id="help-content">
+    <h2>REFRAX</h2>
+    <div class="tagline">"Stop reading code. Start seeing it."</div>
+    <p>REFRAX turns code into visual stories. Claude analyses your code, generates structured data, and this page renders it as an interactive logic spine with risk analysis and diff review.</p>
+    <h3>Logic Spine</h3>
+    <p>Click any node to inspect it. The right panel shows multiple views:</p>
+    <p>&bull; <strong>Plain</strong> &mdash; What it does in everyday language<br>
+       &bull; <strong>Dev</strong> &mdash; Technical details for developers<br>
+       &bull; <strong>Code</strong> &mdash; Source code with highlighted lines<br>
+       &bull; <strong>Risks</strong> &mdash; All identified security and quality risks<br>
+       &bull; <strong>Diff</strong> &mdash; Code changes with explanations<br>
+       &bull; <strong>Glossary</strong> &mdash; Jargon-free term definitions</p>
+    <h3>Navigating Risks</h3>
+    <p>Click any risk card to jump to the affected node in the spine. Use <kbd>Copy Fix Prompt</kbd> to get a ready-made Claude prompt to fix the issue.</p>
+    <h3>Modes</h3>
+    <p>Toggle <kbd>NOV</kbd> / <kbd>PRO</kbd> to switch between novice and professional language.</p>
+    <h3>Features</h3>
+    <p>&bull; <strong>Confidence Score</strong> &mdash; Hover the badge in the header to see how confident the analysis is<br>
+       &bull; <strong>Tech Stack</strong> &mdash; Detected technologies shown as chips; hover for evidence<br>
+       &bull; <strong>File Indicator</strong> &mdash; Shows which file a selected node belongs to<br>
+       &bull; <strong>Overview Button</strong> &mdash; Click &laquo; Overview to deselect and return to the summary view<br>
+       &bull; <strong>Live Updates</strong> &mdash; When the analysis is refined, the diagram morphs automatically &mdash; no refresh needed<br>
+       &bull; <strong>Glossary Auto-Linking</strong> &mdash; Underlined terms in text show definitions on hover</p>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-swatch" style="border-color:var(--cyan)"></div>Step &mdash; An action or operation</div>
+      <div class="legend-item"><div class="legend-swatch" style="border-color:var(--violet);transform:rotate(45deg);border-radius:0"></div>Decision &mdash; A branch point</div>
+      <div class="legend-item"><div class="legend-swatch" style="border-color:var(--amber)"></div>Side Effect &mdash; External interaction (DB, network, file)</div>
+      <div class="legend-item"><div class="legend-swatch" style="border-color:var(--emerald);border-radius:10px"></div>Success &mdash; Happy path outcome</div>
+      <div class="legend-item"><div class="legend-swatch" style="border-color:var(--rose);border-radius:10px"></div>Failure &mdash; Error or rejection</div>
+    </div>
+    <button class="close-btn" onclick="toggleHelp()">Got it</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+
+let data = null;
+let selectedNodeId = null;
+let proMode = sessionStorage.getItem('refrax-mode') === 'pro';
+let lastDataHash = '';
+let activeFileFilter = null; // null = show all files, or fileId to filter spine
+
+// ═══════════════════════════════════════════════════════════════
+// UTILITY
+// ═══════════════════════════════════════════════════════════════
+
+const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ESC_MAP[c]);
+}
+const VALID_SEVERITY = new Set(['high', 'medium', 'low']);
+const VALID_DIFF = new Set(['added', 'modified', 'deleted']);
+function safeCls(val, allowed) { return allowed.has(val) ? val : ''; }
+
+function toggleHelp() {
+  document.getElementById('help-modal').classList.toggle('visible');
+}
+
+function toggleMode() {
+  proMode = !proMode;
+  sessionStorage.setItem('refrax-mode', proMode ? 'pro' : 'novice');
+  const btn = document.getElementById('mode-btn');
+  btn.textContent = proMode ? 'PRO' : 'NOV';
+  btn.classList.toggle('pro', proMode);
+  if (data) render();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════════════
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SYNTAX HIGHLIGHTING
+// ═══════════════════════════════════════════════════════════════
+
+const SYNTAX_RULES = {
+  python: [
+    { pattern: /(#.*$)/gm, cls: 'syn-comment' },
+    { pattern: /("""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/g, cls: 'syn-string' },
+    { pattern: /\b(def|class|return|if|elif|else|for|while|import|from|as|try|except|finally|with|raise|yield|async|await|lambda|pass|break|continue|and|or|not|in|is|None|True|False|self)\b/g, cls: 'syn-keyword' },
+    { pattern: /\b(\d+\.?\d*)\b/g, cls: 'syn-number' },
+    { pattern: /(@\w+)/g, cls: 'syn-decorator' },
+  ],
+  javascript: [
+    { pattern: /(\/\/.*$)/gm, cls: 'syn-comment' },
+    { pattern: /(\/\*[\s\S]*?\*\/)/g, cls: 'syn-comment' },
+    { pattern: /(`(?:\\.|[^`\\])*`|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/g, cls: 'syn-string' },
+    { pattern: /\b(const|let|var|function|return|if|else|for|while|do|switch|case|break|continue|class|extends|new|this|import|export|from|default|try|catch|finally|throw|async|await|yield|typeof|instanceof|null|undefined|true|false|void)\b/g, cls: 'syn-keyword' },
+    { pattern: /\b(\d+\.?\d*)\b/g, cls: 'syn-number' },
+  ],
+};
+SYNTAX_RULES.typescript = SYNTAX_RULES.javascript;
+
+function highlightCode(code, lang) {
+  const rules = SYNTAX_RULES[lang] || SYNTAX_RULES.javascript;
+  const tokens = [];
+  rules.forEach(rule => {
+    const re = new RegExp(rule.pattern.source, rule.pattern.flags);
+    let m;
+    while ((m = re.exec(code)) !== null) {
+      tokens.push({ start: m.index, end: m.index + m[0].length, cls: rule.cls, text: m[0] });
+    }
+  });
+  tokens.sort((a, b) => a.start - b.start);
+  const filtered = [];
+  let lastEnd = 0;
+  tokens.forEach(t => { if (t.start >= lastEnd) { filtered.push(t); lastEnd = t.end; } });
+  let result = '';
+  let pos = 0;
+  filtered.forEach(t => {
+    result += esc(code.slice(pos, t.start));
+    result += `<span class="${t.cls}">${esc(t.text)}</span>`;
+    pos = t.end;
+  });
+  result += esc(code.slice(pos));
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SPINE RENDERER (SVG)
+// ═══════════════════════════════════════════════════════════════
+
+const NODE_W = 320;
+const NODE_H = 44;
+const NODE_GAP = 14;
+const DIAMOND_H = 54;
+const SPINE_X = 16;
+
+function nodeGlowColor(typeClass) {
+  if (typeClass === 'node-step')           return 'rgba(34,211,238,0.7)';
+  if (typeClass === 'node-decision')       return 'rgba(167,139,250,0.7)';
+  if (typeClass === 'node-side_effect')    return 'rgba(251,191,36,0.7)';
+  if (typeClass === 'node-outcome-success')return 'rgba(52,211,153,0.7)';
+  if (typeClass === 'node-outcome-fail')   return 'rgba(251,113,133,0.7)';
+  return 'rgba(34,211,238,0.7)';
+}
+
+function renderSpine() {
+  if (!data || !data.spine) return;
+  const svg = document.getElementById('spine-svg');
+  const spine = data.spine;
+
+  // Filter nodes by active file filter
+  const visibleNodes = activeFileFilter
+    ? spine.nodes.filter(n => n.fileId === activeFileFilter)
+    : spine.nodes;
+
+  if (activeFileFilter) {
+    const filterFile = getFile(activeFileFilter);
+    document.getElementById('spine-title').textContent = filterFile ? filterFile.path : spine.title;
+    document.getElementById('spine-trigger').textContent = `${visibleNodes.length} of ${spine.nodes.length} nodes`;
+  } else {
+    document.getElementById('spine-title').textContent = spine.title || '';
+    document.getElementById('spine-trigger').textContent = spine.trigger || '';
+  }
+
+  if (visibleNodes.length === 0) {
+    svg.innerHTML = '<text x="50%" y="40" text-anchor="middle" fill="#7a8ba3" font-size="12">No nodes to display.</text>';
+    svg.setAttribute('viewBox', '0 0 400 80');
+    svg.style.width = '100%'; svg.style.height = 'auto';
+    updateOverviewBtn();
+    return;
+  }
+
+  const visibleSet = new Set(visibleNodes.map(n => n.id));
+
+  const defsEl = svg.querySelector('defs');
+  const defsHTML = defsEl ? defsEl.outerHTML : '';
+
+  let body = '';
+  let y = 10;
+  const nodePositions = {};
+  const branchLines = [];
+
+  visibleNodes.forEach((node, idx) => {
+    const nodeY = y;
+    const thisH = (node.type === 'decision') ? DIAMOND_H : NODE_H;
+    const cy = nodeY + thisH / 2;
+    nodePositions[node.id] = { x: SPINE_X, y: nodeY, cy };
+
+    const risks = (node.riskIds || []).length;
+    const isSelected = selectedNodeId === node.id;
+
+    const typeClass = node.type === 'outcome'
+      ? (node.label && /fail|error|reject/i.test(node.label) ? 'node-outcome-fail' : 'node-outcome-success')
+      : 'node-' + node.type;
+
+    const glowColor = nodeGlowColor(typeClass);
+
+    body += `<g class="spine-node ${typeClass}${isSelected ? ' selected' : ''}" data-id="${esc(node.id)}" style="--node-glow:${glowColor}">`;
+
+    if (node.type === 'decision') {
+      const mx = SPINE_X + NODE_W / 2;
+      const hw = NODE_W * 0.44;
+      body += `<polygon class="node-bg" points="${mx},${nodeY} ${mx+hw},${cy} ${mx},${nodeY+DIAMOND_H} ${mx-hw},${cy}"/>`;
+    } else {
+      const rx = (typeClass === 'node-outcome-success' || typeClass === 'node-outcome-fail') ? 16 : 5;
+      body += `<rect class="node-bg" x="${SPINE_X}" y="${nodeY}" width="${NODE_W}" height="${NODE_H}" rx="${rx}" ry="${rx}"/>`;
+    }
+
+    if (node.type !== 'decision') {
+      const numX = SPINE_X + 15;
+      body += `<circle class="node-num-ring" cx="${numX}" cy="${cy}" r="9"/>`;
+      body += `<text class="node-number" x="${numX}" y="${cy}">${idx + 1}</text>`;
+    } else {
+      // Number at top-left corner of diamond
+      const numX = SPINE_X + NODE_W / 2 - NODE_W * 0.44 + 14;
+      body += `<circle class="node-num-ring" cx="${numX}" cy="${cy}" r="9"/>`;
+      body += `<text class="node-number" x="${numX}" y="${cy}">${idx + 1}</text>`;
+    }
+
+    const label = proMode ? (node.dev || node.label) : node.label;
+    const maxChars = node.type === 'decision' ? 24 : 34;
+    if (node.type === 'decision' && label && label.length > maxChars) {
+      // Multiline: split into two lines centered vertically
+      const mid = label.lastIndexOf(' ', maxChars);
+      const splitAt = mid > 8 ? mid : maxChars;
+      const line1 = label.slice(0, splitAt);
+      const line2 = label.slice(splitAt).trim();
+      const truncLine2 = line2.length > maxChars ? line2.slice(0, maxChars - 2) + '..' : line2;
+      body += `<text class="node-label" x="${SPINE_X + NODE_W / 2}" y="${cy - 7}" text-anchor="middle">${esc(line1)}</text>`;
+      body += `<text class="node-label" x="${SPINE_X + NODE_W / 2}" y="${cy + 9}" text-anchor="middle">${esc(truncLine2)}</text>`;
+    } else {
+      const truncLabel = label && label.length > maxChars ? label.slice(0, maxChars - 2) + '..' : label;
+      const textX = node.type === 'decision' ? SPINE_X + NODE_W / 2 : SPINE_X + 30;
+      const anchor = node.type === 'decision' ? ' text-anchor="middle"' : '';
+      body += `<text class="node-label" x="${textX}" y="${cy}"${anchor}>${esc(truncLabel || '')}</text>`;
+    }
+
+    if (node.diffStatus && VALID_DIFF.has(node.diffStatus)) {
+      const diffCls = 'diff-' + node.diffStatus;
+      const diffChar = node.diffStatus === 'added' ? '+' : node.diffStatus === 'deleted' ? '-' : '~';
+      body += `<text class="diff-badge ${diffCls}" x="${SPINE_X + NODE_W - 26}" y="${cy}" text-anchor="middle" dominant-baseline="central">${diffChar}</text>`;
+    }
+
+    if (risks > 0) {
+      const bx = SPINE_X + NODE_W - 9;
+      const by = nodeY + 8;
+      body += `<g class="risk-badge"><circle class="risk-badge-circle" cx="${bx}" cy="${by}" r="6.5"/><text class="risk-badge-text" x="${bx}" y="${by}">${risks}</text></g>`;
+    }
+
+    body += '</g>';
+
+    const connX = SPINE_X + NODE_W / 2;
+    const thisNodeH = (node.type === 'decision') ? DIAMOND_H : NODE_H;
+    y += thisNodeH + NODE_GAP;
+    if (idx < visibleNodes.length - 1) {
+      const fromY = nodeY + thisNodeH;
+      body += `<line class="spine-connector" x1="${connX}" y1="${fromY}" x2="${connX}" y2="${y}"/>`;
+    }
+
+    if (node.type === 'decision' && node.branches) {
+      node.branches.forEach((branch, bi) => {
+        branchLines.push({ fromX: SPINE_X + NODE_W, fromY: cy, targetId: branch.targetId, condition: branch.condition, side: bi });
+      });
+    }
+  });
+
+  branchLines.forEach(bl => {
+    if (!visibleSet.has(bl.targetId)) return;
+    const target = nodePositions[bl.targetId];
+    if (!target) return;
+    const fromX = bl.fromX + 8;
+    const cx1 = fromX + 36 + bl.side * 18;
+    body += `<path class="spine-branch-line" d="M ${fromX} ${bl.fromY} C ${cx1} ${bl.fromY}, ${cx1} ${target.cy}, ${fromX} ${target.cy}"/>`;
+    body += `<text class="branch-label" x="${cx1 + 3}" y="${(bl.fromY + target.cy) / 2}">${esc(bl.condition || '')}</text>`;
+  });
+
+  const totalH = y + 10;
+  const totalW = NODE_W + SPINE_X * 2 + 80;
+
+  svg.innerHTML = defsHTML + body;
+  svg.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
+  svg.removeAttribute('width');
+  svg.removeAttribute('height');
+  svg.style.width = '100%';
+  svg.style.height = 'auto';
+
+  svg.querySelectorAll('.spine-node').forEach(g => {
+    g.addEventListener('click', (e) => {
+      e.stopPropagation();
+      g.classList.add('clicking');
+      setTimeout(() => g.classList.remove('clicking'), 120);
+      // Toggle selection via CSS classes instead of full SVG rebuild
+      const prevSelected = svg.querySelector('.spine-node.selected');
+      if (prevSelected) prevSelected.classList.remove('selected');
+      g.classList.add('selected');
+      selectedNodeId = g.dataset.id;
+      renderInspector();
+      renderRisks();
+      renderTechStack();
+      renderFileIndicator();
+      updateOverviewBtn();
+      const activeTab = document.querySelector('.tab-btn.active');
+      if (activeTab && ['risks','diff','glossary'].includes(activeTab.dataset.tab)) {
+        switchTab('plain');
+      }
+    });
+  });
+  updateOverviewBtn();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INSPECTOR RENDERER (Node-specific: Plain, Dev, Code)
+// ═══════════════════════════════════════════════════════════════
+
+function getNode(id) {
+  return data && data.spine ? data.spine.nodes.find(n => n.id === id) : null;
+}
+
+function getFile(fileId) {
+  return data && data.files ? data.files.find(f => f.fileId === fileId) : null;
+}
+
+function getRisksForNode(nodeId) {
+  if (!data || !data.risks) return [];
+  return data.risks.filter(r => r.nodeIds && r.nodeIds.includes(nodeId));
+}
+
+function autoLinkGlossary(text) {
+  if (!data || !data.glossary || !text) return esc(text);
+  let result = esc(text);
+  const terms = [...data.glossary].sort((a, b) => b.term.length - a.term.length);
+  terms.forEach(g => {
+    const re = new RegExp(`\\b(${g.term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'gi');
+    result = result.replace(re, `<span class="glossary-link" data-def="${esc(g.plain)}">$1</span>`);
+  });
+  return result;
+}
+
+function renderOverview() {
+  // Default state: program overview in Plain, all risks in Risks
+  const titleEl = document.getElementById('inspector-title');
+  titleEl.className = '';
+  titleEl.textContent = (data.meta && data.meta.projectName) || 'Overview';
+
+  // Plain tab — program summary
+  let plainHtml = '';
+  if (data.meta && data.meta.summary) {
+    plainHtml += `<div style="line-height:1.8;margin-bottom:14px">${autoLinkGlossary(data.meta.summary)}</div>`;
+  }
+  if (data.spine) {
+    plainHtml += `<div style="color:var(--dim);font-size:13px;margin-bottom:6px"><strong style="color:var(--text)">Flow:</strong> ${esc(data.spine.title || '')}</div>`;
+    if (data.spine.trigger) {
+      plainHtml += `<div style="color:var(--dim);font-size:13px;margin-bottom:12px"><strong style="color:var(--text)">Trigger:</strong> ${esc(data.spine.trigger)}</div>`;
+    }
+    plainHtml += `<div style="color:var(--dim);font-size:12px;margin-bottom:6px">${data.spine.nodes.length} steps &bull; `;
+    const decisions = data.spine.nodes.filter(n => n.type === 'decision').length;
+    const sideEffects = data.spine.nodes.filter(n => n.type === 'side_effect').length;
+    if (decisions) plainHtml += `${decisions} decision${decisions > 1 ? 's' : ''} &bull; `;
+    if (sideEffects) plainHtml += `${sideEffects} side effect${sideEffects > 1 ? 's' : ''} &bull; `;
+    const riskCount = (data.risks || []).length;
+    plainHtml += `${riskCount} risk${riskCount !== 1 ? 's' : ''}</div>`;
+  }
+  if (data.files && data.files.length > 0) {
+    plainHtml += '<div style="margin-top:10px;font-size:12px;color:var(--dim)">';
+    data.files.forEach(f => {
+      plainHtml += `<div style="padding:2px 0"><span style="color:var(--cyan)">${esc(f.path)}</span> <span style="opacity:0.5">${esc(f.language || '')}</span></div>`;
+    });
+    plainHtml += '</div>';
+  }
+  plainHtml += '<div style="margin-top:16px;font-size:11px;color:var(--dim);font-style:italic">Click any node in the spine to inspect it.</div>';
+  document.getElementById('tab-plain').innerHTML = plainHtml;
+
+  // Dev tab — technical overview
+  let devHtml = '<div style="line-height:1.7">';
+  if (data.meta && data.meta.summary) devHtml += `<div>${autoLinkGlossary(data.meta.summary)}</div>`;
+  if (data.files) {
+    devHtml += '<div style="margin-top:10px">';
+    data.files.forEach(f => {
+      const lines = (f.content || '').split('\n').length;
+      devHtml += `<div class="file-ref">${esc(f.path)} &nbsp;(${lines} lines, ${esc(f.language || '')})</div>`;
+    });
+    devHtml += '</div>';
+  }
+  devHtml += '</div>';
+  document.getElementById('tab-dev').innerHTML = devHtml;
+
+  // Code tab — empty in overview
+  document.getElementById('tab-code').innerHTML = '<div class="empty-state">Select a node to see its source code.</div>';
+}
+
+function renderInspector() {
+  const node = getNode(selectedNodeId);
+  const titleEl = document.getElementById('inspector-title');
+
+  if (!node) {
+    if (data && data.meta) {
+      renderOverview();
+    } else {
+      titleEl.className = 'empty-state';
+      titleEl.textContent = 'Click a node to inspect';
+      document.getElementById('tab-plain').innerHTML = '<div class="empty-state">Select a step from the logic spine to see what it does in plain English.</div>';
+      document.getElementById('tab-dev').innerHTML = '<div class="empty-state">Technical details will appear here.</div>';
+      document.getElementById('tab-code').innerHTML = '<div class="empty-state">Source code will appear here.</div>';
+    }
+    return;
+  }
+
+  titleEl.className = '';
+  titleEl.textContent = node.label;
+
+  // Plain tab — with inline risk warnings
+  const plainText = proMode ? (node.dev || node.plain || '') : (node.plain || '');
+  let plainHtml = '<div style="line-height:1.75">' + autoLinkGlossary(plainText) + '</div>';
+  const nodeRisks = getRisksForNode(selectedNodeId);
+  nodeRisks.forEach(r => {
+    plainHtml += `<div class="inline-risk-warning">
+      <div class="irw-title">${esc((r.severity || 'unknown').toUpperCase())}: ${esc(r.title)}</div>
+      <div class="irw-text">${esc(r.plain || '')}</div>
+    </div>`;
+  });
+  document.getElementById('tab-plain').innerHTML = plainHtml;
+
+  // Dev tab
+  let devHtml = '<div>' + autoLinkGlossary(node.dev || 'No technical details.') + '</div>';
+  const file = getFile(node.fileId);
+  if (file && node.lines) {
+    devHtml += `<div class="file-ref">${esc(file.path)} &nbsp;:&nbsp; ${node.lines[0]}&ndash;${node.lines[1]}</div>`;
+  }
+  document.getElementById('tab-dev').innerHTML = devHtml;
+
+  // Code tab
+  if (!file) {
+    document.getElementById('tab-code').innerHTML = '<div class="empty-state">No source file linked.</div>';
+  } else {
+    const lines = (file.content || '').split('\n');
+    const lang = file.language || 'javascript';
+    const startLine = node.lines ? node.lines[0] : 1;
+    const endLine = node.lines ? node.lines[1] : lines.length;
+    const ctxStart = Math.max(0, startLine - 4);
+    const ctxEnd = Math.min(lines.length - 1, endLine + 2);
+    let codeHtml = `<div class="code-header">${esc(file.path)} &nbsp; lines ${startLine}&ndash;${endLine}</div><pre>`;
+    for (let i = ctxStart; i <= ctxEnd; i++) {
+      const lineNum = i + 1;
+      const isHighlight = lineNum >= startLine && lineNum <= endLine;
+      codeHtml += `<span class="${isHighlight ? 'line-highlight' : ''}"><span class="line-num">${lineNum}</span>${highlightCode(lines[i] || '', lang)}\n</span>`;
+    }
+    codeHtml += '</pre>';
+    document.getElementById('tab-code').innerHTML = codeHtml;
+  }
+}
+
+function copyFixPrompt(btn, riskId) {
+  const risk = data.risks.find(r => r.id === riskId);
+  if (!risk || !risk.fixPrompt) return;
+  navigator.clipboard.writeText(risk.fixPrompt).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy Fix Prompt'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => {
+    btn.textContent = 'Failed';
+    setTimeout(() => { btn.textContent = 'Copy Fix Prompt'; }, 2000);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TECH STACK BAR (small, inside inspector header)
+// ═══════════════════════════════════════════════════════════════
+
+function techChipClass(role) {
+  const r = (role || '').toLowerCase();
+  if (/language|backend|frontend|logic/i.test(r)) return 'tc-lang';
+  if (/framework|library|runtime/i.test(r)) return 'tc-framework';
+  if (/database|db|storage|cache/i.test(r)) return 'tc-database';
+  if (/security|auth|hash|encrypt|password|token/i.test(r)) return 'tc-security';
+  if (/infra|deploy|cloud|docker|ci/i.test(r)) return 'tc-infra';
+  return '';
+}
+
+function getActiveTech(nodeId) {
+  const node = getNode(nodeId);
+  if (!node || !data.techStack) return new Set();
+  const text = ((node.dev || '') + ' ' + (node.plain || '') + ' ' + (node.label || '')).toLowerCase();
+  const active = new Set();
+  data.techStack.forEach(t => {
+    const name = t.name.toLowerCase();
+    const evidence = (t.evidence || '').toLowerCase();
+    // Match: tech name in text, or any word from name/evidence (2+ chars)
+    const role = (t.role || '').toLowerCase();
+    const nameWords = name.split(/[\s\/\-]+/).filter(w => w.length >= 2);
+    const roleWords = role.split(/[\s\/\-]+/).filter(w => w.length >= 2);
+    const evidenceWords = evidence.split(/[\s\/\-\.,()]+/).filter(w => w.length >= 2);
+    const allWords = [...nameWords, ...roleWords, ...evidenceWords];
+    if (text.includes(name) || allWords.some(w => text.includes(w))) {
+      active.add(t.name);
+    }
+  });
+  return active;
+}
+
+function renderTechStack() {
+  const bar = document.getElementById('tech-stack-bar');
+  if (!data || !data.techStack || data.techStack.length === 0) {
+    bar.style.display = 'none';
+    return;
+  }
+  bar.style.display = 'flex';
+  const active = selectedNodeId ? getActiveTech(selectedNodeId) : new Set();
+  const hasSelection = !!selectedNodeId;
+  let html = data.techStack.map(t => {
+    const lit = !hasSelection || active.has(t.name);
+    const cls = lit ? techChipClass(t.role) : '';
+    const dimStyle = !lit ? ' style="opacity:0.25"' : '';
+    let tip = esc(t.role);
+    if (t.version) tip += ` v${esc(t.version)}`;
+    if (t.evidence) tip += `\n${esc(t.evidence)}`;
+    return `<div class="tech-chip ${cls}"${dimStyle}>${esc(t.name)}` +
+      (t.version ? ` <span style="opacity:0.5;font-size:8px">${esc(t.version)}</span>` : '') +
+      (proMode && !t.version ? ` <span style="opacity:0.6;font-size:9px;margin-left:3px">${esc(t.role)}</span>` : '') +
+      `<div class="tech-tooltip" style="white-space:pre-line">${tip}</div></div>`;
+  }).join('');
+
+  // Environment chip (venv)
+  const env = data.meta && data.meta.environment;
+  if (env) {
+    let envTip = '';
+    if (env.pythonVersion) envTip += `Python ${esc(env.pythonVersion)}`;
+    if (env.venvPath) envTip += `${envTip ? '\n' : ''}Path: ${esc(env.venvPath)}`;
+    if (env.nodeVersion) envTip += `${envTip ? '\n' : ''}Node ${esc(env.nodeVersion)}`;
+    const envLabel = env.venv ? 'venv' : env.nodeVersion ? 'node' : 'env';
+    const envColor = env.venv ? 'tc-security' : '';
+    html += `<div class="tech-chip-sep"></div>`;
+    html += `<div class="tech-chip ${envColor}">${esc(envLabel)} <span style="opacity:0.5;font-size:8px">&check;</span>` +
+      `<div class="tech-tooltip" style="white-space:pre-line">${envTip || 'Environment detected'}</div></div>`;
+  }
+
+  // Dependencies chip
+  const deps = data.meta && data.meta.dependencies;
+  if (deps && deps.length > 0) {
+    let depTip = deps.map(d => `${esc(d.name)}${d.version ? ' ' + esc(d.version) : ''}`).join('\n');
+    html += `<div class="tech-chip tc-framework" style="cursor:help">${deps.length} deps` +
+      `<div class="tech-tooltip" style="white-space:pre-line;text-align:left;max-width:280px">${depTip}</div></div>`;
+  }
+
+  bar.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RISKS TAB (full dashboard, replaces bottom panel)
+// ═══════════════════════════════════════════════════════════════
+
+function renderRiskCard(r, clickable) {
+  const desc = r.plain || '';
+  const sev = safeCls(r.severity, VALID_SEVERITY);
+  const onclick = clickable ? ` onclick="scrollToNode('${esc(r.nodeIds && r.nodeIds[0] || '')}')"` : '';
+  let html = `<div class="risk-card severity-${sev}"${onclick}>
+    <div class="card-title"><span class="severity-dot ${sev}"></span>${esc(r.title)}</div>
+    <div class="card-desc">${autoLinkGlossary(desc)}</div>`;
+  if (r.whyItMatters) {
+    html += `<div style="font-size:10px;color:var(--amber);margin-top:4px;font-style:italic">${esc(r.whyItMatters)}</div>`;
+  }
+  if (r.fix) {
+    html += `<div class="card-fix"><div class="card-fix-title">${esc(r.fix.title || 'Fix')}${r.fix.effort ? ' &mdash; ' + esc(r.fix.effort) + ' effort' : ''}</div>`;
+    if (r.fix.steps) r.fix.steps.forEach(s => { html += `<div class="card-fix-step">${esc(s)}</div>`; });
+    html += '</div>';
+  }
+  if (r.fixPrompt) {
+    html += `<button class="copy-prompt-btn" onclick="event.stopPropagation();copyFixPrompt(this,'${esc(r.id)}')">Copy Fix Prompt</button>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderRisks() {
+  const container = document.getElementById('tab-risks');
+  if (!data || !data.risks || data.risks.length === 0) {
+    container.innerHTML = '<div class="empty-state">No risks identified.</div>';
+    return;
+  }
+
+  const order = { high: 0, medium: 1, low: 2 };
+
+  if (!selectedNodeId) {
+    // No node selected — show ALL risks, clickable to navigate
+    const sorted = [...data.risks].sort((a, b) => (order[a.severity] || 3) - (order[b.severity] || 3));
+    let html = `<div style="font-size:12px;color:var(--dim);margin-bottom:10px">${sorted.length} risk${sorted.length !== 1 ? 's' : ''} across all nodes</div>`;
+    sorted.forEach(r => { html += renderRiskCard(r, true); });
+    container.innerHTML = html;
+    return;
+  }
+
+  const nodeRisks = getRisksForNode(selectedNodeId);
+  if (nodeRisks.length === 0) {
+    container.innerHTML = '<div class="empty-state">No risks for this node.</div>';
+    return;
+  }
+
+  const sorted = [...nodeRisks].sort((a, b) => (order[a.severity] || 3) - (order[b.severity] || 3));
+  let html = `<div style="font-size:12px;color:var(--dim);margin-bottom:10px">${sorted.length} risk${sorted.length !== 1 ? 's' : ''} for this node</div>`;
+  sorted.forEach(r => { html += renderRiskCard(r, false); });
+  container.innerHTML = html;
+}
+
+function scrollToNode(nodeId) {
+  if (!nodeId) return;
+  const targetNode = getNode(nodeId);
+  if (targetNode && activeFileFilter && targetNode.fileId !== activeFileFilter) {
+    activeFileFilter = null;
+  }
+  selectedNodeId = nodeId;
+  renderPanels();
+  const nodeEl = findNodeEl(nodeId);
+  if (nodeEl) nodeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  switchTab('plain');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DIFF TAB
+// ═══════════════════════════════════════════════════════════════
+
+function renderDiff() {
+  const container = document.getElementById('tab-diff');
+  if (!data || !data.diff || !data.diff.hunks || data.diff.hunks.length === 0) {
+    container.innerHTML = '<div class="empty-state">No diff data available.</div>';
+    return;
+  }
+
+  let html = '<div class="diff-meta">';
+  if (data.diff.baseLabel) html += `<span><span class="label">Base:</span> ${esc(data.diff.baseLabel)}</span>`;
+  if (data.diff.headLabel) html += `<span><span class="label">Head:</span> ${esc(data.diff.headLabel)}</span>`;
+  html += '</div>';
+
+  if (data.diff.summary) {
+    html += `<div style="font-size:12px;color:var(--dim);margin-bottom:10px;line-height:1.5">${autoLinkGlossary(data.diff.summary)}</div>`;
+  }
+
+  data.diff.hunks.forEach(hunk => {
+    const file = getFile(hunk.fileId);
+    const fileName = file ? file.path : 'unknown';
+    const linkedNode = hunk.nodeIds && hunk.nodeIds[0];
+    html += `<div class="diff-hunk">`;
+    html += `<div class="diff-hunk-header"${linkedNode ? ` onclick="scrollToNode('${esc(linkedNode)}')"` : ''}>${esc(fileName)}</div>`;
+    html += '<pre>';
+    if (hunk.lines) {
+      hunk.lines.forEach(line => {
+        const cls = line.type === 'add' ? 'diff-line-add' : line.type === 'del' ? 'diff-line-del' : 'diff-line-ctx';
+        const prefix = line.type === 'add' ? '+' : line.type === 'del' ? '-' : ' ';
+        const numStr = line.num != null ? String(line.num) : '';
+        html += `<span class="${cls}"><span class="diff-line-num">${esc(numStr)}</span>${prefix} ${esc(line.text)}</span>`;
+      });
+    }
+    html += '</pre>';
+    if (hunk.explanation) {
+      html += `<div class="diff-explanation">${autoLinkGlossary(hunk.explanation)}</div>`;
+    }
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GLOSSARY TAB
+// ═══════════════════════════════════════════════════════════════
+
+function renderGlossary() {
+  const container = document.getElementById('tab-glossary');
+  if (!data || !data.glossary || data.glossary.length === 0) {
+    container.innerHTML = '<div class="empty-state">No glossary terms.</div>';
+    return;
+  }
+
+  container.innerHTML = data.glossary.map(g =>
+    `<div class="glossary-item" onclick="this.classList.toggle('open')">
+      <div class="glossary-term">${esc(g.term)}</div>
+      <div class="glossary-def">${esc(proMode ? (g.dev || g.plain) : g.plain)}</div>
+    </div>`
+  ).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HEADER / META
+// ═══════════════════════════════════════════════════════════════
+
+function renderHeader() {
+  if (!data || !data.meta) return;
+  const bar = document.getElementById('summary-bar');
+  const conf = document.getElementById('confidence-badge');
+
+  let summary = data.meta.summary || (data.meta.projectName || 'Analysis');
+  if (!data.meta.summary && data.spine && data.spine.title) summary += ' — ' + data.spine.title;
+  bar.textContent = summary;
+
+  if (data.meta.confidence != null) {
+    const pct = Math.round(data.meta.confidence * 100);
+    const col = pct >= 80 ? 'var(--emerald)' : pct >= 60 ? 'var(--amber)' : 'var(--rose)';
+    const level = pct >= 80 ? 'High' : pct >= 60 ? 'Moderate' : 'Low';
+    const tipText = `<strong>${level} confidence (${pct}%)</strong><br><br>` +
+      'How sure the AI is that this diagram accurately represents the code. ' +
+      'Higher means more of the code was reviewed and the logic flow is well understood. ' +
+      'Lower means some parts may be missing or unclear.';
+    conf.innerHTML = pct + '% confidence<span class="conf-tip">' + tipText + '</span>';
+    conf.style.borderColor = col;
+    conf.style.color = col;
+  } else {
+    conf.innerHTML = '';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+// Common panel update sequence — avoids duplication across 6+ call sites
+function renderPanels() {
+  renderSpine();
+  renderInspector();
+  renderRisks();
+  renderTechStack();
+  renderFileIndicator();
+  updateOverviewBtn();
+}
+
+// Safe node element lookup — CSS.escape prevents selector injection
+function findNodeEl(nodeId) {
+  if (!nodeId) return null;
+  return document.querySelector(`.spine-node[data-id="${CSS.escape(nodeId)}"]`);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MASTER RENDER
+// ═══════════════════════════════════════════════════════════════
+
+function render() {
+  const btn = document.getElementById('mode-btn');
+  btn.textContent = proMode ? 'PRO' : 'NOV';
+  btn.classList.toggle('pro', proMode);
+
+  renderHeader();
+  renderPanels();
+  renderDiff();
+  renderGlossary();
+  renderFileTree();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DESELECT — click spine panel background to return to overview
+// ═══════════════════════════════════════════════════════════════
+
+function deselectNode() {
+  selectedNodeId = null;
+  renderPanels();
+  switchTab('plain');
+}
+
+function showOverview() {
+  activeFileFilter = null;
+  selectedNodeId = null;
+  switchSpineView('spine');
+  renderPanels();
+  switchTab('plain');
+}
+
+function updateOverviewBtn() {
+  const btn = document.getElementById('overview-btn');
+  if (btn) btn.classList.toggle('active', !selectedNodeId && !activeFileFilter);
+}
+
+document.getElementById('spine-panel').addEventListener('click', (e) => {
+  if (e.target.closest('.spine-node') || e.target.closest('.spine-tab') ||
+      e.target.closest('.file-tree-fn') || e.target.closest('.file-tree-item')) return;
+  deselectNode();
+});
+
+// ═══════════════════════════════════════════════════════════════
+// FILE INDICATOR — shows current file at top of spine
+// ═══════════════════════════════════════════════════════════════
+
+function renderFileIndicator() {
+  const el = document.getElementById('spine-file-indicator');
+  if (!data || !data.files) { el.innerHTML = ''; return; }
+  const node = getNode(selectedNodeId);
+  if (node && node.fileId) {
+    const file = getFile(node.fileId);
+    if (file) {
+      el.innerHTML = `<span class="file-path">${esc(file.path)}</span>` +
+        (node.lines ? ` <span style="opacity:0.5">:${node.lines[0]}-${node.lines[1]}</span>` : '');
+      return;
+    }
+  }
+  // Show filter state or file count
+  if (activeFileFilter) {
+    const filterFile = getFile(activeFileFilter);
+    el.innerHTML = filterFile
+      ? `<span class="file-path">${esc(filterFile.path)}</span> <span style="cursor:pointer;opacity:0.5;font-size:9px" onclick="filterByFile(null)" title="Show all files">&times;</span>`
+      : `<span style="opacity:0.5">${data.files.length} files</span>`;
+  } else {
+    el.innerHTML = `<span style="opacity:0.5">${data.files.length} file${data.files.length !== 1 ? 's' : ''}</span>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SPINE VIEW SWITCHER — toggle between spine and file tree
+// ═══════════════════════════════════════════════════════════════
+
+function switchSpineView(view) {
+  document.querySelectorAll('.spine-tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));
+  document.getElementById('spine-view-spine').style.display = view === 'spine' ? '' : 'none';
+  document.getElementById('spine-meta').style.display = view === 'spine' ? '' : 'none';
+  document.getElementById('spine-view-files').style.display = view === 'files' ? '' : 'none';
+  if (view === 'files') renderFileTree();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FILE TREE — directory tree with functions per file
+// ═══════════════════════════════════════════════════════════════
+
+function renderFileTree() {
+  const container = document.getElementById('spine-view-files');
+  if (!data || !data.files || data.files.length === 0) {
+    container.innerHTML = '<div class="empty-state">No files in analysis.</div>';
+    return;
+  }
+
+  const allNodes = data.spine ? data.spine.nodes : [];
+  const allRisks = data.risks || [];
+  const totalRiskCount = allRisks.length;
+  const totalDiffCount = allNodes.filter(n => n.diffStatus).length;
+
+  // "All files" entry at the top
+  const allActive = !activeFileFilter;
+  let html = `<div class="file-tree-all${allActive ? ' filter-active' : ''}" onclick="event.stopPropagation();filterByFile(null)">` +
+    `<span style="font-size:10px;opacity:0.5">&#9679;</span> All files`;
+  if (totalRiskCount > 0) html += `<span class="file-tree-badge file-tree-badge-risk">${totalRiskCount}</span>`;
+  if (totalDiffCount > 0) html += `<span class="file-tree-badge file-tree-badge-diff">~${totalDiffCount}</span>`;
+  html += `<span class="file-tree-node-count">${allNodes.length}</span></div>`;
+
+  data.files.forEach((file, fi) => {
+    const fileNodes = allNodes.filter(n => n.fileId === file.fileId);
+    const isActive = selectedNodeId && fileNodes.some(n => n.id === selectedNodeId);
+    const isFiltered = activeFileFilter === file.fileId;
+
+    // Count risks: by location + by linked nodes
+    const fileNodeIds = new Set(fileNodes.map(n => n.id));
+    const riskSet = new Set();
+    allRisks.forEach(r => {
+      if (r.where && r.where.fileId === file.fileId) riskSet.add(r.id);
+      if (r.nodeIds && r.nodeIds.some(id => fileNodeIds.has(id))) riskSet.add(r.id);
+    });
+    const fileRiskCount = riskSet.size;
+    const diffCount = fileNodes.filter(n => n.diffStatus).length;
+
+    html += `<div class="file-tree-item${isActive ? ' active-file' : ''}${isFiltered ? ' filter-active' : ''} open" data-file-idx="${fi}">`;
+    html += `<div class="file-tree-path" onclick="event.stopPropagation();filterByFile('${esc(file.fileId)}')">` +
+      `<span class="file-tree-chevron" onclick="event.stopPropagation();toggleFileTree(this.closest('.file-tree-item'))">&#9654;</span>` +
+      `<span>${esc(file.path)}</span>` +
+      `<span class="file-tree-lang">${esc(file.language || '')}</span>`;
+    if (fileRiskCount > 0) html += `<span class="file-tree-badge file-tree-badge-risk">${fileRiskCount}</span>`;
+    if (diffCount > 0) html += `<span class="file-tree-badge file-tree-badge-diff">~${diffCount}</span>`;
+    html += `<span class="file-tree-node-count">${fileNodes.length}</span></div>`;
+
+    if (fileNodes.length > 0) {
+      html += '<div class="file-tree-functions">';
+      fileNodes.forEach(n => {
+        const typeClass = n.type === 'outcome'
+          ? (n.label && /fail|error|reject/i.test(n.label) ? 'outcome-fail' : 'outcome-success')
+          : n.type;
+        const isActiveFn = selectedNodeId === n.id;
+        const label = proMode ? (n.dev || n.label) : (n.plain || n.label);
+        const truncLabel = label && label.length > 40 ? label.slice(0, 38) + '..' : label;
+        html += `<div class="file-tree-fn${isActiveFn ? ' active-fn' : ''}" onclick="event.stopPropagation();selectFromTree('${esc(n.id)}')">` +
+          `<span class="fn-type fn-type-${esc(typeClass)}"></span>${esc(truncLabel)}</div>`;
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+function toggleFileTree(item) {
+  item.classList.toggle('open');
+}
+
+function filterByFile(fileId) {
+  activeFileFilter = fileId;
+  selectedNodeId = null;
+  switchSpineView('spine');
+  renderPanels();
+}
+
+function selectFromTree(nodeId) {
+  const node = getNode(nodeId);
+  if (node && node.fileId) activeFileFilter = node.fileId;
+  selectedNodeId = nodeId;
+  switchSpineView('spine');
+  renderPanels();
+  const nodeEl = findNodeEl(nodeId);
+  if (nodeEl) nodeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  switchTab('plain');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LIVE POLLER — watches data.json every 500ms
+// ═══════════════════════════════════════════════════════════════
+
+async function pollData() {
+  try {
+    const res = await fetch('/data.json?t=' + Date.now());
+    if (res.ok) {
+      const text = await res.text();
+      if (text !== lastDataHash) {
+        lastDataHash = text;
+        data = JSON.parse(text);
+        render();
+      }
+    }
+  } catch (e) { /* server not ready */ }
+  setTimeout(pollData, 500);
+}
+pollData();
+</script>
+</body>
+</html>

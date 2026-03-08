@@ -9,14 +9,14 @@
    ╚════╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝  ╚═════╝
 
   C:\> jord0.skills
-  12 production skills for Claude Code
+  13 production skills for Claude Code
 
 
 ```
 
 # jord0.skills
 
-**12 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview).** Copy a folder, get a superpower.
+**13 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview).** Copy a folder, get a superpower.
 
 By [jord0.cmd](https://github.com/jord0-cmd)
 
@@ -42,7 +42,7 @@ git clone https://github.com/jord0-cmd/jord0.skills.git
 cp -r jord0.skills/skills/* ~/.claude/skills/
 ```
 
-All 12 skills are installed. No build step, no configuration. Start a Claude Code session and use them immediately.
+All 13 skills are installed. No build step, no configuration. Start a Claude Code session and use them immediately.
 
 > **Note:** Most skills are zero-dependency. OPTIC requires Python + a Gemini API key, LOCUS requires a React environment, and NOTIFY requires platform-specific notification tools. Everything else works out of the box.
 
@@ -66,6 +66,7 @@ See the [full install guide](https://jord0-cmd.github.io/jord0.skills/getting-st
 | [**RECON**](skills/RECON/) | Deep research that persists to a knowledge base | WebSearch access |
 | [**RECALL**](skills/RECALL/) | Search your knowledge base before searching the web | Knowledge base |
 | [**NOTIFY**](skills/NOTIFY/) | Cross-platform desktop notifications with interactive buttons | See below |
+| [**REFRAX**](skills/REFRAX/) | Visual code comprehension — interactive logic spines, risk dashboards, diff views | Python 3 |
 
 ---
 
@@ -121,7 +122,7 @@ The design principles:
 1. **Self-contained** — each skill works by copying one folder
 2. **No lock-in** — standard markdown, standard JSON, no proprietary formats
 3. **Prerequisites are documented** — if a skill needs something, it tells you
-4. **Quality over quantity** — 12 skills that work perfectly > 100 that kinda work
+4. **Quality over quantity** — 13 skills that work perfectly > 100 that kinda work
 
 ---
 

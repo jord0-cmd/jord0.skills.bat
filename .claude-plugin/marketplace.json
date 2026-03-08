@@ -6,22 +6,24 @@
     "url": "https://github.com/jord0-cmd"
   },
   "metadata": {
-    "description": "12 production-grade skills for Claude Code. AI image generation, interactive image mapping, context portals, coding standards, project onboarding, structured debates, desktop notifications, deep research, knowledge recall, decision logging, counterarguments, and divergent thinking.",
-    "version": "1.1.0"
+    "description": "13 production-grade skills for Claude Code. AI image generation, interactive image mapping, visual code comprehension, context portals, coding standards, project onboarding, structured debates, desktop notifications, deep research, knowledge recall, decision logging, counterarguments, and divergent thinking.",
+    "version": "1.2.0"
   },
   "plugins": [
     {
       "name": "jord0-skills",
       "source": ".",
-      "description": "All 12 jord0.skills skills: OPTIC, LOCUS, PORTAL, STRICT, FORGE, CONCLAVE, NOTIFY, RECON, RECALL, ECHO, MIRROR, SPARK",
-      "version": "1.1.0",
+      "description": "All 13 jord0.skills skills: OPTIC, LOCUS, REFRAX, PORTAL, STRICT, FORGE, CONCLAVE, NOTIFY, RECON, RECALL, ECHO, MIRROR, SPARK",
+      "version": "1.2.0",
       "category": "development",
       "tags": [
         "productivity",
         "coding-standards",
         "context-management",
         "research",
-        "brainstorming"
+        "brainstorming",
+        "code-review",
+        "visualization"
       ]
     }
   ]
