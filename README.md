@@ -54,6 +54,7 @@ See the [full install guide](https://jord0-cmd.github.io/jord0.skills/getting-st
 
 | Skill | What It Does | Prerequisites |
 |-------|-------------|---------------|
+| [**REFRAX**](skills/REFRAX/) | Visual code comprehension — interactive logic spines, risk dashboards, diff views | Python 3 |
 | [**OPTIC**](skills/OPTIC/) | AI image generation pipeline — prompts, multi-pass, inpainting | Python 3.10+, Gemini API key |
 | [**LOCUS**](skills/LOCUS/) | Make static images interactive — hover states, warps, hotspots | React 18+ |
 | [**PORTAL**](skills/PORTAL/) | Save and restore session context across sessions and machines | None |
@@ -66,7 +67,6 @@ See the [full install guide](https://jord0-cmd.github.io/jord0.skills/getting-st
 | [**RECON**](skills/RECON/) | Deep research that persists to a knowledge base | WebSearch access |
 | [**RECALL**](skills/RECALL/) | Search your knowledge base before searching the web | Knowledge base |
 | [**NOTIFY**](skills/NOTIFY/) | Cross-platform desktop notifications with interactive buttons | See below |
-| [**REFRAX**](skills/REFRAX/) | Visual code comprehension — interactive logic spines, risk dashboards, diff views | Python 3 |
 
 ---
 
