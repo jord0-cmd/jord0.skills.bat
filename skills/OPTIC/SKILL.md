@@ -1,5 +1,5 @@
 ---
-name: optic
+name: OPTIC
 description: |
   INVOKE THIS SKILL when: generating AI images, editing existing images, writing prompts for
   Gemini image models, performing surgical inpainting, running multi-pass Sequential Grounding,

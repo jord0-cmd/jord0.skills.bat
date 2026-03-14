@@ -1,5 +1,5 @@
 ---
-name: locus
+name: LOCUS
 description: |
   INVOKE THIS SKILL when: making AI-generated images interactive, mapping clickable zones
   onto generated artwork, warping HTML content onto perspective surfaces in images,

@@ -1,12 +1,12 @@
 ---
-name: refrax
+name: REFRAX
 description: |
   INVOKE THIS SKILL when: reviewing AI-generated code, understanding unfamiliar codebases,
   visualizing code logic as flow diagrams, explaining code to non-technical stakeholders,
   identifying security risks in code, reviewing diffs visually, or when users need to
   understand code they didn't write. Generates interactive visual code comprehension pages.
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 user-invocable: true
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
 # REFRAX — Visual Code Comprehension
@@ -14,7 +14,23 @@ user-invocable: true
 > "Stop reading code. Start seeing it."
 
 **Author:** jord0 | **Version:** 1.0
-**Requirements:** Python 3 (for http.server), modern browser
+
+---
+
+## Prerequisites
+
+- Python 3 (for `http.server`)
+- Modern browser (Chrome, Firefox, Safari, Edge)
+
+---
+
+## Usage
+
+```
+/refrax
+```
+
+Point REFRAX at any code — a file, function, endpoint, or diff — and it generates an interactive visual logic spine in your browser. Use NOV (novice) mode for plain-English explanations or DEV mode for technical detail.
 
 ---
 
