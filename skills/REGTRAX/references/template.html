@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REGTRAX</title>
+<style>
+/* ── Reset & Theme ──────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080c14;--surface:#0d1520;--border:#1e2d42;--text:#e2e8f0;--dim:#7a8ba3;
+  --cyan:#22d3ee;--amber:#fbbf24;--violet:#a78bfa;--emerald:#34d399;--rose:#fb7185;
+  --track:#2a3a52;
+  --glow:rgba(34,211,238,0.5);--glow-amber:rgba(251,191,36,0.4);
+  --scanline:rgba(255,255,255,0.015);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Cascadia Code','Fira Code','JetBrains Mono',monospace;font-size:14px;overflow-x:hidden}
+body{background-image:
+  linear-gradient(var(--scanline) 1px, transparent 1px),
+  linear-gradient(90deg, var(--scanline) 1px, transparent 1px);
+  background-size:100% 3px, 50px 100%}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+#app{display:flex;flex-direction:column;height:100vh;padding:16px;gap:12px}
+header{display:flex;align-items:center;gap:16px;flex-shrink:0}
+header h1{font-size:18px;letter-spacing:4px;color:var(--cyan);text-shadow:0 0 12px var(--glow),0 0 30px rgba(34,211,238,0.2);animation:titlePulse 4s ease-in-out infinite}
+@keyframes titlePulse{0%,100%{text-shadow:0 0 12px var(--glow),0 0 30px rgba(34,211,238,0.15)}50%{text-shadow:0 0 16px var(--glow),0 0 40px rgba(34,211,238,0.3)}}
+#pattern-display{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:13px;color:var(--amber);overflow-x:auto;white-space:nowrap;text-shadow:0 0 8px var(--glow-amber)}
+#help-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--dim);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+#help-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+
+/* ── Diagram Area ───────────────────────────────────────────── */
+#diagram-wrap{flex:1;min-height:200px;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:auto;position:relative;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 60px rgba(0,0,0,0.4)}
+#diagram-wrap svg{display:block;max-width:100%;height:auto}
+
+/* ── Node Styles ────────────────────────────────────────────── */
+.node-rect{rx:6;ry:6;stroke-width:2;fill:var(--bg)}
+.node-literal .node-rect{stroke:var(--cyan);stroke-opacity:0.9;filter:drop-shadow(0 0 3px rgba(34,211,238,0.25))}
+.node-charClass .node-rect,.node-dot .node-rect{stroke:var(--amber);stroke-opacity:0.9;filter:drop-shadow(0 0 3px rgba(251,191,36,0.25))}
+.node-quantifier .node-rect{stroke:var(--violet);stroke-opacity:0.9;filter:drop-shadow(0 0 3px rgba(167,139,250,0.25))}
+.node-group .node-rect{stroke:var(--dim);stroke-dasharray:5 3;stroke-width:1.5;stroke-opacity:0.4;transition:stroke .3s,stroke-opacity .3s,filter .3s}
+.node-group.group-lit .node-rect{stroke:var(--emerald);stroke-opacity:0.9;filter:drop-shadow(0 0 6px rgba(52,211,153,0.4))}
+.node-anchor polygon{stroke:var(--rose);stroke-width:2;fill:var(--bg);stroke-opacity:0.4;filter:none}
+.node-backref .node-rect{stroke:var(--cyan);stroke-opacity:0.9;stroke-dasharray:4 2;filter:drop-shadow(0 0 3px rgba(34,211,238,0.25))}
+.node-label{fill:var(--text);font-family:inherit;font-size:12px;text-anchor:middle;dominant-baseline:central}
+
+/* ── Tracks ─────────────────────────────────────────────────── */
+.track{stroke:var(--track);stroke-width:2;fill:none;animation:trackBreathe 3s ease-in-out infinite}
+@keyframes trackBreathe{0%,100%{opacity:0.7}50%{opacity:1}}
+.loop-track{stroke:var(--violet);stroke-width:2;fill:none;stroke-dasharray:5 3;opacity:0.4;animation:trackBreathe 3s ease-in-out infinite}
+.loop-track-lit{stroke:var(--violet);stroke-width:3;fill:none;stroke-dasharray:5 3;opacity:1;filter:url(#glowSmall)}
+.quant-label{fill:var(--violet);font-family:inherit;font-size:14px;font-weight:bold;text-anchor:middle;opacity:1;filter:drop-shadow(0 0 4px rgba(167,139,250,0.5))}
+.group-label{fill:var(--dim);font-family:inherit;font-size:12px;font-weight:bold;opacity:0.8}
+
+/* ── Animation States ───────────────────────────────────────── */
+.node-hit .node-rect,.node-hit polygon{filter:drop-shadow(0 0 8px var(--glow)) drop-shadow(0 0 16px rgba(34,211,238,0.2)) brightness(1.3) !important;stroke-opacity:1 !important}
+.node-lit .node-rect,.node-lit polygon{stroke:var(--emerald) !important;stroke-opacity:1 !important;filter:drop-shadow(0 0 6px var(--emerald)) drop-shadow(0 0 14px rgba(52,211,153,0.3)) !important}
+.node-fail-lit .node-rect,.node-fail-lit polygon{stroke:var(--rose) !important;stroke-opacity:1 !important;filter:drop-shadow(0 0 6px var(--rose)) drop-shadow(0 0 14px rgba(251,113,133,0.3)) !important}
+
+/* ── Photon & Trail ─────────────────────────────────────────── */
+.photon{fill:var(--cyan);filter:url(#glowHot);pointer-events:none}
+.photon-fail{fill:var(--rose);filter:url(#glowHot);pointer-events:none}
+.photon-success{fill:var(--emerald);filter:url(#glowHot);pointer-events:none}
+.trail-line{stroke:var(--cyan);stroke-width:5;fill:none;filter:url(#glowMed);stroke-linecap:round;opacity:0.8;pointer-events:none}
+.trail-line-fail{stroke:var(--rose);stroke-width:5;fill:none;filter:url(#glowMed);stroke-linecap:round;opacity:0.8;pointer-events:none}
+
+/* ── Controls ───────────────────────────────────────────────── */
+#controls{flex-shrink:0;display:flex;flex-direction:column;gap:10px}
+#test-row{display:flex;gap:8px;align-items:center}
+#test-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:inherit;font-size:13px;outline:none;transition:border-color .2s}
+#test-input:focus{border-color:var(--cyan);box-shadow:0 0 10px rgba(34,211,238,0.15)}
+#test-btn{background:var(--cyan);color:var(--bg);border:none;border-radius:6px;padding:8px 16px;font-family:inherit;font-size:13px;cursor:pointer;font-weight:600;transition:all .2s;box-shadow:0 0 12px rgba(34,211,238,0.3)}
+#test-btn:hover{filter:brightness(1.15);box-shadow:0 0 20px rgba(34,211,238,0.5)}
+#scrubber-row{display:flex;align-items:center;gap:10px}
+#scrubber{flex:1;-webkit-appearance:none;appearance:none;height:4px;background:var(--border);border-radius:2px;outline:none;cursor:pointer}
+#scrubber::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--cyan);border:2px solid var(--bg);cursor:pointer;box-shadow:0 0 8px rgba(34,211,238,0.5)}
+#scrubber::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--cyan);border:2px solid var(--bg);cursor:pointer;box-shadow:0 0 8px rgba(34,211,238,0.5)}
+#scrub-label{font-size:11px;color:var(--dim);min-width:80px;text-align:right}
+
+/* ── Bottom Panels ──────────────────────────────────────────── */
+#bottom{display:flex;gap:12px;flex-shrink:0;max-height:220px}
+#history{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;overflow-y:auto;box-shadow:inset 0 0 30px rgba(0,0,0,0.3)}
+#history h3{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}
+.hist-item{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:4px;cursor:pointer;font-size:12px;margin-bottom:2px;transition:background .15s}
+.hist-item:hover{background:rgba(255,255,255,0.05)}
+.hist-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.hist-dot.match{background:var(--emerald)}
+.hist-dot.fail{background:var(--rose)}
+.hist-str{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-info{color:var(--dim);font-size:11px;white-space:nowrap}
+#explanation{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;overflow-y:auto;box-shadow:inset 0 0 30px rgba(0,0,0,0.3)}
+#explanation h3{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}
+#explanation-text{font-size:12px;line-height:1.6;white-space:pre-wrap;color:var(--dim)}
+
+/* ── Help Modal ─────────────────────────────────────────────── */
+#help-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;align-items:center;justify-content:center}
+#help-modal.visible{display:flex}
+#help-content{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 28px 20px;max-width:540px;width:90%}
+#help-content h2{color:var(--cyan);margin-bottom:16px;font-size:18px;letter-spacing:2px}
+#help-content h3{color:var(--text);margin:16px 0 8px;font-size:13px}
+#help-content p,#help-content li{color:var(--dim);font-size:12px;line-height:1.7;margin-bottom:6px}
+#help-content ul{margin:0 0 8px;padding-left:18px}
+#help-content kbd{background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:11px}
+#help-content .help-flow{display:flex;align-items:center;gap:8px;margin:10px 0;font-size:12px;color:var(--dim)}
+#help-content .help-arrow{color:var(--cyan);font-size:14px}
+#help-content .help-step{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:4px 10px}
+#help-content .help-close{margin-top:14px;text-align:right}
+#help-content .help-close button{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 16px;color:var(--dim);cursor:pointer;font-size:12px}
+#help-content .help-close button:hover{border-color:var(--cyan);color:var(--cyan)}
+
+/* ── Hover Highlights ───────────────────────────────────────── */
+.pat-span{transition:color .15s;cursor:default}
+.pat-hover{color:var(--cyan) !important}
+.pat-group-hover{color:var(--amber) !important}
+.svg-node-hover .node-rect,.svg-node-hover polygon{filter:drop-shadow(0 0 8px var(--glow)) brightness(1.3) !important;stroke:var(--cyan) !important}
+.loop-track-hover{stroke:var(--violet) !important;stroke-width:3 !important;opacity:1 !important;filter:url(#glowSmall) !important}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>REGTRAX</h1>
+    <div id="pattern-display">No pattern loaded</div>
+    <button id="help-btn" onclick="toggleHelp()">?</button>
+  </header>
+
+  <div id="diagram-wrap">
+    <svg id="diagram" width="200" height="80">
+      <defs>
+        <!-- Lightweight glow filters — small blur radius for performance -->
+        <filter id="glowSmall"><feGaussianBlur stdDeviation="2" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <filter id="glowMed"><feGaussianBlur stdDeviation="4" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <filter id="glowHot"><feGaussianBlur stdDeviation="6" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="g"/><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <text x="100" y="40" text-anchor="middle" fill="#475569" font-family="inherit" font-size="13">Waiting for pattern...</text>
+    </svg>
+  </div>
+
+  <div id="controls">
+    <div id="test-row">
+      <input id="test-input" type="text" placeholder="Type a test string and press Enter..." />
+      <button id="test-btn" onclick="runTest()">Test</button>
+    </div>
+    <div id="scrubber-row">
+      <input id="scrubber" type="range" min="0" max="0" value="0" oninput="onScrub(this.value)" />
+      <span id="scrub-label">Step 0/0</span>
+    </div>
+  </div>
+
+  <div id="bottom">
+    <div id="history">
+      <h3>Test History</h3>
+      <div id="history-list"></div>
+    </div>
+    <div id="explanation">
+      <h3>AI Explanation</h3>
+      <div id="explanation-text">Load a pattern to see the explanation.</div>
+    </div>
+  </div>
+</div>
+
+<div id="help-modal" onclick="if(event.target===this)toggleHelp()">
+  <div id="help-content">
+    <h2>REGTRAX</h2>
+    <p style="color:var(--text);font-size:13px;margin-bottom:12px">AI-Powered Regex Railroad Visualizer</p>
+
+    <h3>How It Works</h3>
+    <p>REGTRAX is an <strong style="color:var(--text)">AI-partnered tool</strong>. You describe what you want to match in plain English in the terminal, and the AI builds the regex, explains it, and sends it here for visual testing.</p>
+    <div class="help-flow">
+      <span class="help-step">You describe</span>
+      <span class="help-arrow">&rarr;</span>
+      <span class="help-step">AI writes regex</span>
+      <span class="help-arrow">&rarr;</span>
+      <span class="help-step">Diagram appears</span>
+      <span class="help-arrow">&rarr;</span>
+      <span class="help-step">You test</span>
+    </div>
+
+    <h3>Testing Strings</h3>
+    <ul>
+      <li>Type a test string in the input box and press <kbd>Enter</kbd></li>
+      <li>The <strong style="color:var(--cyan)">photon</strong> traces the railroad diagram</li>
+      <li><strong style="color:var(--emerald)">Green</strong> = match &mdash; <strong style="color:var(--rose)">Red</strong> = derailment at the failure point</li>
+      <li>Use the <strong>scrubber</strong> below the diagram to step through manually</li>
+    </ul>
+
+    <h3>Live Updates</h3>
+    <p>When you ask the AI to change the pattern, the diagram <strong style="color:var(--text)">morphs automatically</strong>. No refresh needed &mdash; just keep talking to the AI and testing here.</p>
+
+    <h3>Reading the Diagram</h3>
+    <ul>
+      <li><strong style="color:var(--cyan)">Cyan nodes</strong> &mdash; literal characters</li>
+      <li><strong style="color:var(--amber)">Amber nodes</strong> &mdash; character classes like <kbd>[a-z]</kbd> or <kbd>\d</kbd></li>
+      <li><strong style="color:var(--violet)">Violet arcs</strong> &mdash; quantifiers (<kbd>+</kbd> one or more, <kbd>*</kbd> zero or more, <kbd>?</kbd> optional, <kbd>{n}</kbd> exact count)</li>
+      <li><strong style="color:var(--emerald)">Emerald borders</strong> &mdash; capture groups</li>
+      <li><strong style="color:var(--rose)">Rose nodes</strong> &mdash; anchors (<kbd>^</kbd> start, <kbd>$</kbd> end, <kbd>\b</kbd> boundary)</li>
+      <li><strong style="color:var(--cyan)">Dashed cyan</strong> &mdash; backreferences (<kbd>\1</kbd> matches same text as a capture group)</li>
+    </ul>
+
+    <p style="margin-top:14px;color:var(--cyan);font-style:italic">"Don't just write Regex. Replay it."</p>
+    <div class="help-close"><button onclick="toggleHelp()">Got it</button></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// REGEX PARSER — Recursive descent, produces AST from pattern
+// ═══════════════════════════════════════════════════════════════
+
+function parseRegex(pattern) {
+  let pos = 0, groupIndex = 0;
+
+  function peek() { return pattern[pos]; }
+  function advance() { return pattern[pos++]; }
+  function hasMore() { return pos < pattern.length; }
+
+  // Entry point — top-level is alternation
+  function parseTop() { return parseAlternation(); }
+
+  // a|b|c → { type: 'alternation', alternatives: [...] }
+  function parseAlternation() {
+    const alts = [parseSequence()];
+    while (hasMore() && peek() === '|') { advance(); alts.push(parseSequence()); }
+    return alts.length === 1 ? alts[0] : { type: 'alternation', alternatives: alts };
+  }
+
+  // abc → { type: 'sequence', elements: [...] }
+  function parseSequence() {
+    const els = [];
+    while (hasMore() && peek() !== ')' && peek() !== '|') els.push(parseQuantified());
+    if (els.length === 0) return { type: 'literal', value: '\u03B5' };
+    return els.length === 1 ? els[0] : { type: 'sequence', elements: els };
+  }
+
+  // atom followed by optional quantifier
+  function parseQuantified() {
+    let node = parseAtom();
+    if (!hasMore()) return node;
+    const c = peek();
+    if (c === '?' || c === '*' || c === '+') {
+      advance();
+      const min = c === '+' ? 1 : 0, max = c === '?' ? 1 : Infinity;
+      let lazy = false;
+      if (hasMore() && peek() === '?') { advance(); lazy = true; }
+      return { type: 'quantifier', min, max, lazy, body: node };
+    }
+    if (c === '{') {
+      const saved = pos; advance();
+      const nums = parseBraceQuant();
+      if (nums) {
+        let lazy = false;
+        if (hasMore() && peek() === '?') { advance(); lazy = true; }
+        return { type: 'quantifier', min: nums[0], max: nums[1], lazy, body: node };
+      }
+      pos = saved; // not a quantifier, backtrack
+    }
+    return node;
+  }
+
+  // {n}, {n,}, {n,m}
+  function parseBraceQuant() {
+    let s = '';
+    while (hasMore() && /\d/.test(peek())) s += advance();
+    if (!s) return null;
+    const min = parseInt(s);
+    if (hasMore() && peek() === '}') { advance(); return [min, min]; }
+    if (hasMore() && peek() === ',') {
+      advance();
+      let ms = '';
+      while (hasMore() && /\d/.test(peek())) ms += advance();
+      if (hasMore() && peek() === '}') { advance(); return [min, ms ? parseInt(ms) : Infinity]; }
+    }
+    return null;
+  }
+
+  // Single unit: group, class, dot, anchor, escape, or literal char
+  function parseAtom() {
+    const c = peek();
+    if (c === '(') return parseGroup();
+    if (c === '[') return parseCharClass();
+    if (c === '.') { advance(); return { type: 'dot' }; }
+    if (c === '^') { advance(); return { type: 'anchor', kind: 'start' }; }
+    if (c === '$') { advance(); return { type: 'anchor', kind: 'end' }; }
+    if (c === '\\') return parseEscape();
+    advance();
+    return { type: 'literal', value: c };
+  }
+
+  // Groups: capturing (), named (?<name>), non-capturing (?:), lookahead (?= ?!)
+  function parseGroup() {
+    advance(); // consume (
+    let capture = true, name = null;
+    if (hasMore() && peek() === '?') {
+      const saved = pos; advance();
+      if (hasMore() && peek() === ':') { advance(); capture = false; }
+      else if (hasMore() && peek() === '<' && pos + 1 < pattern.length && /[a-zA-Z_]/.test(pattern[pos + 1])) {
+        // Named group (?<name>...)
+        advance(); // consume <
+        name = '';
+        while (hasMore() && peek() !== '>') name += advance();
+        if (hasMore()) advance(); // consume >
+        capture = true;
+      }
+      else if (hasMore() && peek() === '=') {
+        advance();
+        const body = parseAlternation();
+        if (hasMore() && peek() === ')') advance();
+        return { type: 'lookahead', positive: true, body };
+      }
+      else if (hasMore() && peek() === '!') {
+        advance();
+        const body = parseAlternation();
+        if (hasMore() && peek() === ')') advance();
+        return { type: 'lookahead', positive: false, body };
+      }
+      else pos = saved;
+    }
+    const idx = capture ? ++groupIndex : null;
+    const body = parseAlternation();
+    if (hasMore() && peek() === ')') advance();
+    return { type: 'group', capture, index: idx, name, body };
+  }
+
+  // [a-z], [^0-9], [\w\s]
+  function parseCharClass() {
+    advance(); // consume [
+    let negated = false;
+    if (hasMore() && peek() === '^') { advance(); negated = true; }
+    let chars = '';
+    while (hasMore() && peek() !== ']') {
+      if (peek() === '\\') { advance(); chars += '\\' + (hasMore() ? advance() : ''); }
+      else chars += advance();
+    }
+    if (hasMore()) advance(); // consume ]
+    return { type: 'charClass', chars, negated };
+  }
+
+  // Escape sequences: \d \w \s (charClass), \b \B (anchor), \xHH \uHHHH (hex/unicode),
+  // \1-\9 (backreference), \n \t \r (special literals), or escaped literal
+  function parseEscape() {
+    advance(); // consume backslash
+    if (!hasMore()) return { type: 'literal', value: '\\' };
+    const c = advance();
+
+    // Character class shorthands
+    const shorthand = { d:'\\d', D:'\\D', w:'\\w', W:'\\W', s:'\\s', S:'\\S' };
+    if (shorthand[c]) return { type: 'charClass', chars: shorthand[c], negated: false };
+
+    // Word boundaries — anchors, not character classes
+    if (c === 'b') return { type: 'anchor', kind: 'boundary' };
+    if (c === 'B') return { type: 'anchor', kind: 'non-boundary' };
+
+    // Hex escape \xHH
+    if (c === 'x') {
+      let hex = '';
+      for (let i = 0; i < 2 && hasMore() && /[0-9a-fA-F]/.test(peek()); i++) hex += advance();
+      if (hex.length === 2) return { type: 'literal', value: '\\x' + hex, codePoint: parseInt(hex, 16) };
+      return { type: 'literal', value: 'x' + hex };
+    }
+
+    // Unicode escape \uHHHH
+    if (c === 'u') {
+      let hex = '';
+      for (let i = 0; i < 4 && hasMore() && /[0-9a-fA-F]/.test(peek()); i++) hex += advance();
+      if (hex.length === 4) return { type: 'literal', value: '\\u' + hex, codePoint: parseInt(hex, 16) };
+      return { type: 'literal', value: 'u' + hex };
+    }
+
+    // Backreferences \1-\9
+    if (/[1-9]/.test(c)) return { type: 'backreference', index: parseInt(c) };
+
+    // Special whitespace escapes
+    if (c === 'n') return { type: 'literal', value: '\\n' };
+    if (c === 't') return { type: 'literal', value: '\\t' };
+    if (c === 'r') return { type: 'literal', value: '\\r' };
+
+    // Escaped literal (e.g. \. \* \+ etc)
+    return { type: 'literal', value: c };
+  }
+
+  return parseTop();
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// SVG RAILROAD RENDERER — Converts AST to SVG diagram
+// ═══════════════════════════════════════════════════════════════
+
+const PAD_X = 12, PAD_Y = 8, NODE_H = 32, TRACK_Y = NODE_H / 2;
+const GAP = 16, CURVE_R = 10, LOOP_H = 40;
+
+function textWidth(s) { return Math.max(s.length * 7.5 + 16, 36); }
+
+// Readable label for hex/unicode escape codes
+function hexLabel(value, cp) {
+  if (cp === undefined) return value;
+  const names = { 0:'NUL', 7:'BEL', 8:'BS', 9:'TAB', 10:'LF', 13:'CR', 27:'ESC', 32:'Space', 127:'DEL' };
+  if (names[cp]) return names[cp];
+  if (cp >= 33 && cp <= 126) return String.fromCharCode(cp);
+  return value;
+}
+
+// Anchor display label
+function anchorLabel(kind) {
+  switch (kind) {
+    case 'start': return '^';
+    case 'end': return '$';
+    case 'boundary': return '\\b';
+    case 'non-boundary': return '\\B';
+    default: return kind;
+  }
+}
+
+// Compute dimensions for a node without rendering
+function measure(node) {
+  if (!node) return { w: 0, h: NODE_H };
+  switch (node.type) {
+    case 'literal': {
+      const lbl = node.codePoint !== undefined ? hexLabel(node.value, node.codePoint) : node.value;
+      return { w: textWidth(lbl), h: NODE_H };
+    }
+    case 'charClass': {
+      const lbl = (node.negated ? '[^' : '[') + node.chars + ']';
+      return { w: textWidth(lbl), h: NODE_H };
+    }
+    case 'dot': return { w: textWidth('any'), h: NODE_H };
+    case 'anchor': return { w: textWidth(anchorLabel(node.kind)), h: NODE_H };
+    case 'backreference': return { w: textWidth('= Grp ' + node.index), h: NODE_H };
+    case 'lookahead': {
+      const bm = measure(node.body);
+      return { w: bm.w + PAD_X * 2 + 8, h: bm.h + 20 };
+    }
+    case 'sequence': {
+      let w = 0, h = NODE_H;
+      node.elements.forEach((el, i) => {
+        const m = measure(el);
+        w += m.w + (i > 0 ? GAP : 0);
+        h = Math.max(h, m.h);
+      });
+      return { w, h };
+    }
+    case 'alternation': {
+      let w = 0, h = 0;
+      node.alternatives.forEach((alt, i) => {
+        const m = measure(alt);
+        w = Math.max(w, m.w);
+        h += m.h + (i > 0 ? GAP : 0);
+      });
+      return { w: w + CURVE_R * 4 + GAP, h };
+    }
+    case 'quantifier': {
+      const bm = measure(node.body);
+      const extra = (node.max !== 1 || node.min === 0) ? LOOP_H : 0;
+      return { w: bm.w + GAP * 2, h: bm.h + extra };
+    }
+    case 'group': {
+      const bm = measure(node.body);
+      return { w: bm.w + PAD_X * 2 + 8, h: bm.h + 20 };
+    }
+    default: return { w: 40, h: NODE_H };
+  }
+}
+
+// Rendering state — rebuilt on each diagram build
+let nodePositions = [];
+let nodeIdCounter = 0;
+let altStack = [];           // tracks alternation nesting during render
+let activeAltBranches = {};  // {altNid: branchIdx} — which branch the photon follows
+let currentAST = null;
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Render a single AST node to SVG, recording positions for animation
+function renderNode(node, x, y, svg) {
+  if (!node) return;
+  const nid = nodeIdCounter++;
+  node._nid = nid; // tag AST node for hover/animation linking
+  const m = measure(node);
+
+  switch (node.type) {
+    case 'literal': {
+      const lbl = node.codePoint !== undefined ? hexLabel(node.value, node.codePoint) : node.value;
+      const cx = x + m.w / 2, cy = y + TRACK_Y;
+      svg.push(`<g class="node-literal" data-nid="${nid}"><rect class="node-rect" x="${x}" y="${y}" width="${m.w}" height="${NODE_H}"/><text class="node-label" x="${cx}" y="${cy}">${escHtml(lbl)}</text></g>`);
+      nodePositions.push({ x, y, w: m.w, h: NODE_H, id: nid, type: 'literal', value: node.value, altContext: altStack.map(a => ({...a})) });
+      break;
+    }
+    case 'charClass': {
+      const lbl = (node.negated ? '[^' : '[') + node.chars + ']';
+      const cx = x + m.w / 2, cy = y + TRACK_Y;
+      svg.push(`<g class="node-charClass" data-nid="${nid}"><rect class="node-rect" x="${x}" y="${y}" width="${m.w}" height="${NODE_H}"/><text class="node-label" x="${cx}" y="${cy}">${escHtml(lbl)}</text></g>`);
+      nodePositions.push({ x, y, w: m.w, h: NODE_H, id: nid, type: 'charClass', chars: node.chars, negated: node.negated, altContext: altStack.map(a => ({...a})) });
+      break;
+    }
+    case 'dot': {
+      const cx = x + m.w / 2, cy = y + TRACK_Y;
+      svg.push(`<g class="node-dot" data-nid="${nid}"><rect class="node-rect" x="${x}" y="${y}" width="${m.w}" height="${NODE_H}"/><text class="node-label" x="${cx}" y="${cy}">any</text></g>`);
+      nodePositions.push({ x, y, w: m.w, h: NODE_H, id: nid, type: 'dot', altContext: altStack.map(a => ({...a})) });
+      break;
+    }
+    case 'anchor': {
+      const lbl = anchorLabel(node.kind);
+      const cx = x + m.w / 2, cy = y + TRACK_Y;
+      svg.push(`<g class="node-anchor" data-nid="${nid}"><polygon points="${cx},${y} ${x+m.w},${cy} ${cx},${y+NODE_H} ${x},${cy}"/><text class="node-label" x="${cx}" y="${cy}">${escHtml(lbl)}</text></g>`);
+      nodePositions.push({ x, y, w: m.w, h: NODE_H, id: nid, type: 'anchor', kind: node.kind, altContext: altStack.map(a => ({...a})) });
+      break;
+    }
+    case 'backreference': {
+      const lbl = '= Grp ' + node.index;
+      const cx = x + m.w / 2, cy = y + TRACK_Y;
+      svg.push(`<g class="node-backref" data-nid="${nid}"><rect class="node-rect" x="${x}" y="${y}" width="${m.w}" height="${NODE_H}"/><text class="node-label" x="${cx}" y="${cy}">${escHtml(lbl)}</text></g>`);
+      nodePositions.push({ x, y, w: m.w, h: NODE_H, id: nid, type: 'backreference', index: node.index, altContext: altStack.map(a => ({...a})) });
+      break;
+    }
+    case 'sequence': {
+      let cx = x;
+      node.elements.forEach((el, i) => {
+        if (i > 0) svg.push(`<line class="track" x1="${cx - GAP}" y1="${y + TRACK_Y}" x2="${cx}" y2="${y + TRACK_Y}" data-seg="${nid}-${i}"/>`);
+        renderNode(el, cx, y, svg);
+        cx += measure(el).w + GAP;
+      });
+      break;
+    }
+    case 'alternation': {
+      let cy = y;
+      const mainY = y + TRACK_Y;
+      const forkX = x + CURVE_R;
+      const joinX = x + m.w - CURVE_R;
+      const midX = x + CURVE_R * 2 + GAP / 2;
+      const parentCtx = altStack.map(a => ({...a}));
+
+      // Entry waypoint (before fork, at main track level)
+      nodePositions.push({ x, y: mainY - 6, w: 1, h: 12, id: -(nid * 1000 + 999), type: '_wp', altContext: parentCtx });
+
+      node.alternatives.forEach((alt, i) => {
+        altStack.push({ altNid: nid, branchIdx: i });
+        const branchCtx = altStack.map(a => ({...a}));
+        const am = measure(alt);
+        const altY = cy + TRACK_Y;
+
+        // Fork curve, branch content, join curve
+        svg.push(`<path class="track" d="M${x},${mainY} Q${forkX},${mainY} ${forkX},${altY}" data-seg="fork-${nid}-${i}"/>`);
+
+        // Branch waypoints for animation path
+        nodePositions.push({ x: forkX - 1, y: mainY - 6, w: 1, h: 12, id: -(nid * 1000 + i * 10 + 1), type: '_wp', altContext: branchCtx });
+        nodePositions.push({ x: forkX, y: altY - 6, w: 1, h: 12, id: -(nid * 1000 + i * 10 + 2), type: '_wp', altContext: branchCtx });
+
+        renderNode(alt, midX, cy, svg);
+
+        const endX = midX + am.w;
+        svg.push(`<line class="track" x1="${endX}" y1="${altY}" x2="${joinX}" y2="${altY}" data-seg="mid-${nid}-${i}"/>`);
+        svg.push(`<path class="track" d="M${joinX},${altY} Q${joinX},${mainY} ${x + m.w},${mainY}" data-seg="join-${nid}-${i}"/>`);
+
+        nodePositions.push({ x: joinX, y: altY - 6, w: 1, h: 12, id: -(nid * 1000 + i * 10 + 3), type: '_wp', altContext: branchCtx });
+        nodePositions.push({ x: joinX + 1, y: mainY - 6, w: 1, h: 12, id: -(nid * 1000 + i * 10 + 4), type: '_wp', altContext: branchCtx });
+
+        cy += am.h + GAP;
+        altStack.pop();
+      });
+
+      // Exit waypoint
+      nodePositions.push({ x: x + m.w, y: mainY - 6, w: 1, h: 12, id: -(nid * 1000 + 998), type: '_wp', altContext: parentCtx });
+      nodePositions.push({ x, y, w: m.w, h: m.h, id: nid, type: 'alternation', altContext: parentCtx });
+      break;
+    }
+    case 'quantifier': {
+      const bm = measure(node.body);
+      const bodyX = x + GAP;
+      renderNode(node.body, bodyX, y, svg);
+      svg.push(`<line class="track" x1="${x}" y1="${y + TRACK_Y}" x2="${bodyX}" y2="${y + TRACK_Y}" data-seg="qin-${nid}"/>`);
+      svg.push(`<line class="track" x1="${bodyX + bm.w}" y1="${y + TRACK_Y}" x2="${x + m.w}" y2="${y + TRACK_Y}" data-seg="qout-${nid}"/>`);
+
+      // Loop-back arc for repeating quantifiers
+      if (node.max > 1 || node.max === Infinity) {
+        const loopY = y + bm.h + 28;
+        svg.push(`<path class="loop-track" d="M${bodyX + bm.w},${y + TRACK_Y} C${bodyX + bm.w + 20},${loopY + 8} ${bodyX - 20},${loopY + 8} ${bodyX},${y + TRACK_Y}" data-seg="loop-${nid}"/>`);
+      }
+      // Skip arc for optional quantifiers
+      if (node.min === 0) {
+        const skipY = y - 24;
+        svg.push(`<path class="loop-track" d="M${x},${y + TRACK_Y} C${x - 6},${skipY} ${x + m.w + 6},${skipY} ${x + m.w},${y + TRACK_Y}" data-seg="skip-${nid}"/>`);
+      }
+
+      // Quantifier label
+      let ql = '';
+      if (node.min === 0 && node.max === 1) ql = '?';
+      else if (node.min === 0 && node.max === Infinity) ql = '*';
+      else if (node.min === 1 && node.max === Infinity) ql = '+';
+      else if (node.min === node.max) ql = `{${node.min}}`;
+      else if (node.max === Infinity) ql = `{${node.min},}`;
+      else ql = `{${node.min},${node.max}}`;
+      if (node.lazy) ql += '?';
+      svg.push(`<text class="quant-label" x="${x + m.w / 2}" y="${y + bm.h + (node.max > 1 ? 20 : 8)}">${ql}</text>`);
+      nodePositions.push({ x, y, w: m.w, h: m.h, id: nid, type: 'quantifier', min: node.min, max: node.max, altContext: altStack.map(a => ({...a})) });
+      break;
+    }
+    case 'group': {
+      const bm = measure(node.body);
+      const innerX = x + PAD_X + 4, innerY = y + 16;
+      const ctx = altStack.map(a => ({...a}));
+      svg.push(`<g class="node-group" data-nid="${nid}"><rect class="node-rect" x="${x}" y="${y}" width="${m.w}" height="${m.h}"/></g>`);
+      const glbl = node.name ? node.name : node.capture ? 'Group ' + node.index : '(?:)';
+      svg.push(`<text class="group-label" x="${x + 6}" y="${y + 11}">${escHtml(glbl)}</text>`);
+      svg.push(`<line class="track" x1="${x}" y1="${innerY + TRACK_Y}" x2="${innerX}" y2="${innerY + TRACK_Y}" data-seg="gin-${nid}"/>`);
+
+      // Group entry/exit waypoints
+      nodePositions.push({ x, y: innerY + TRACK_Y - 6, w: 1, h: 12, id: -(nid * 1000 + 997), type: '_wp', altContext: ctx });
+      renderNode(node.body, innerX, innerY, svg);
+      nodePositions.push({ x: x + m.w, y: innerY + TRACK_Y - 6, w: 1, h: 12, id: -(nid * 1000 + 996), type: '_wp', altContext: ctx });
+
+      svg.push(`<line class="track" x1="${innerX + bm.w}" y1="${innerY + TRACK_Y}" x2="${x + m.w}" y2="${innerY + TRACK_Y}" data-seg="gout-${nid}"/>`);
+      nodePositions.push({ x, y, w: m.w, h: m.h, id: nid, type: 'group', capture: node.capture, index: node.index, altContext: ctx });
+      break;
+    }
+    case 'lookahead': {
+      const bm = measure(node.body);
+      const innerX = x + PAD_X + 4, innerY = y + 16;
+      svg.push(`<g class="node-group" data-nid="${nid}"><rect class="node-rect" x="${x}" y="${y}" width="${m.w}" height="${m.h}" style="stroke:var(--rose);stroke-dasharray:3 2"/></g>`);
+      svg.push(`<text class="group-label" x="${x + 6}" y="${y + 11}" style="fill:var(--rose)">${node.positive ? '(?=)' : '(?!)'}</text>`);
+      svg.push(`<line class="track" x1="${x}" y1="${innerY + TRACK_Y}" x2="${innerX}" y2="${innerY + TRACK_Y}" data-seg="lain-${nid}"/>`);
+      renderNode(node.body, innerX, innerY, svg);
+      svg.push(`<line class="track" x1="${innerX + bm.w}" y1="${innerY + TRACK_Y}" x2="${x + m.w}" y2="${innerY + TRACK_Y}" data-seg="laout-${nid}"/>`);
+      nodePositions.push({ x, y, w: m.w, h: m.h, id: nid, type: 'lookahead', altContext: altStack.map(a => ({...a})) });
+      break;
+    }
+  }
+}
+
+// Build complete diagram SVG from AST
+function buildDiagram(ast) {
+  nodePositions = [];
+  nodeIdCounter = 0;
+  altStack = [];
+  const parts = [];
+  const m = measure(ast);
+  const padL = 50, padR = 50, padT = 30, padB = 30;
+  const totalW = m.w + padL + padR, totalH = m.h + padT + padB;
+  const startX = padL - 20, endX = padL + m.w + 20, trackY = padT + TRACK_Y;
+
+  // Start/end markers and entry/exit tracks
+  parts.push(`<circle cx="${startX}" cy="${trackY}" r="6" fill="var(--track)"/>`);
+  parts.push(`<line class="track" x1="${startX + 6}" y1="${trackY}" x2="${padL}" y2="${trackY}" data-seg="entry"/>`);
+  renderNode(ast, padL, padT, parts);
+  parts.push(`<line class="track" x1="${padL + m.w}" y1="${trackY}" x2="${endX - 8}" y2="${trackY}" data-seg="exit"/>`);
+  parts.push(`<circle cx="${endX}" cy="${trackY}" r="6" fill="none" stroke="var(--track)" stroke-width="2"/>`);
+  parts.push(`<circle cx="${endX}" cy="${trackY}" r="3" fill="var(--track)"/>`);
+
+  // Start/end position markers for animation
+  nodePositions.unshift({ x: startX - 6, y: trackY - 6, w: 12, h: 12, id: -1, type: '_start' });
+  nodePositions.push({ x: endX - 6, y: trackY - 6, w: 12, h: 12, id: -2, type: '_end' });
+
+  return { svg: parts.join('\n'), width: totalW, height: totalH };
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// AST UTILITIES — Pattern reconstruction and branch detection
+// ═══════════════════════════════════════════════════════════════
+
+// Reconstruct regex pattern string from AST node
+function astToPattern(node) {
+  if (!node) return '';
+  switch (node.type) {
+    case 'literal': {
+      const c = node.value;
+      // Hex/unicode escapes pass through as-is
+      if (c.startsWith('\\x') || c.startsWith('\\u')) return c;
+      if (c.length === 1 && /[.*+?^${}()|[\]\\]/.test(c)) return '\\' + c;
+      if (c === '\\n') return '\\n';
+      if (c === '\\t') return '\\t';
+      if (c === '\\r') return '\\r';
+      return c;
+    }
+    case 'charClass': return (node.negated ? '[^' : '[') + node.chars + ']';
+    case 'dot': return '.';
+    case 'anchor': {
+      if (node.kind === 'start') return '^';
+      if (node.kind === 'end') return '$';
+      if (node.kind === 'boundary') return '\\b';
+      if (node.kind === 'non-boundary') return '\\B';
+      return '';
+    }
+    case 'backreference': return '\\' + node.index;
+    case 'sequence': return node.elements.map(astToPattern).join('');
+    case 'alternation': return node.alternatives.map(astToPattern).join('|');
+    case 'quantifier': {
+      let s = astToPattern(node.body);
+      if (node.body.type === 'alternation' || node.body.type === 'sequence') s = '(?:' + s + ')';
+      if (node.min === 0 && node.max === 1) s += '?';
+      else if (node.min === 0 && node.max === Infinity) s += '*';
+      else if (node.min === 1 && node.max === Infinity) s += '+';
+      else if (node.min === node.max) s += '{' + node.min + '}';
+      else if (node.max === Infinity) s += '{' + node.min + ',}';
+      else s += '{' + node.min + ',' + node.max + '}';
+      if (node.lazy) s += '?';
+      return s;
+    }
+    case 'group': {
+      if (node.name) return '(?<' + node.name + '>' + astToPattern(node.body) + ')';
+      return (node.capture ? '(' : '(?:') + astToPattern(node.body) + ')';
+    }
+    case 'lookahead': return (node.positive ? '(?=' : '(?!') + astToPattern(node.body) + ')';
+    default: return '';
+  }
+}
+
+// Determine which alternation branch was taken based on capture group values
+function determineActiveBranches(ast, matchResult, leaveUnresolved) {
+  const active = {};
+  function walk(node, captureIdx) {
+    if (!node) return;
+    switch (node.type) {
+      case 'alternation': {
+        const nid = node._nid;
+        if (nid === undefined) break;
+        // Match branch against captured value
+        if (captureIdx !== null && matchResult && matchResult[captureIdx]) {
+          const captured = matchResult[captureIdx];
+          for (let i = 0; i < node.alternatives.length; i++) {
+            try {
+              if (new RegExp('^(?:' + astToPattern(node.alternatives[i]) + ')$', currentFlags).test(captured)) {
+                active[nid] = i;
+                break;
+              }
+            } catch(e) {}
+          }
+        }
+        if (active[nid] === undefined && !leaveUnresolved) active[nid] = 0;
+        node.alternatives.forEach(alt => walk(alt, captureIdx));
+        break;
+      }
+      case 'group': walk(node.body, node.capture ? node.index : captureIdx); break;
+      case 'sequence': node.elements.forEach(el => walk(el, captureIdx)); break;
+      case 'quantifier': walk(node.body, captureIdx); break;
+      case 'lookahead': walk(node.body, captureIdx); break;
+    }
+  }
+  walk(ast, null);
+  return active;
+}
+
+// Build "progressive optional" pattern for partial matching on fail
+// Makes each element after the first optional, so we can capture partial matches
+function buildPartialPattern(ast) {
+  let elements;
+  if (ast.type === 'sequence') elements = ast.elements.filter(el => el.type !== 'anchor');
+  else if (ast.type === 'anchor') return '';
+  else elements = [ast];
+  if (elements.length === 0) return '';
+
+  let pat = astToPattern(elements[0]);
+  for (let i = 1; i < elements.length; i++) pat += '(?:' + astToPattern(elements[i]);
+  for (let i = 1; i < elements.length; i++) pat += ')?';
+  return '^' + pat;
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// FAIL POSITION DETECTION — Walk AST to find deepest match point
+// ═══════════════════════════════════════════════════════════════
+
+function findFailPosition(pattern, flags, testStr) {
+  if (!currentAST) return 0;
+  const ci = (flags || '').includes('i');
+  let deepest = 0;
+
+  function walk(node, pos) {
+    deepest = Math.max(deepest, pos);
+    if (!node) return pos;
+
+    switch (node.type) {
+      case 'anchor': return pos;
+      case 'literal': {
+        for (const ch of node.value) {
+          if (pos >= testStr.length) return -1;
+          const a = ci ? ch.toLowerCase() : ch;
+          const b = ci ? testStr[pos].toLowerCase() : testStr[pos];
+          if (a !== b) { deepest = Math.max(deepest, pos); return -1; }
+          pos++;
+          deepest = Math.max(deepest, pos);
+        }
+        return pos;
+      }
+      case 'charClass':
+      case 'dot': {
+        if (pos >= testStr.length) return -1;
+        try {
+          if (new RegExp(astToPattern(node), ci ? 'i' : '').test(testStr[pos])) {
+            deepest = Math.max(deepest, pos + 1);
+            return pos + 1;
+          }
+        } catch(e) {}
+        return -1;
+      }
+      case 'backreference': {
+        // Backreferences can't be reliably walked without full engine state;
+        // treat as consuming one char for fail-position estimation
+        if (pos >= testStr.length) return -1;
+        deepest = Math.max(deepest, pos + 1);
+        return pos + 1;
+      }
+      case 'sequence': {
+        let p = pos;
+        for (const el of (node.elements || [])) { p = walk(el, p); if (p === -1) return -1; }
+        return p;
+      }
+      case 'alternation': {
+        const nid = node._nid;
+        // Follow pre-resolved branch if available
+        if (nid !== undefined && activeAltBranches[nid] !== undefined) {
+          const alt = (node.alternatives || [])[activeAltBranches[nid]];
+          return alt ? walk(alt, pos) : -1;
+        }
+        // Try all branches, pick deepest
+        let best = -1, bestIdx = 0, bestDeep = -1;
+        for (let i = 0; i < (node.alternatives || []).length; i++) {
+          const r = walk(node.alternatives[i], pos);
+          if (r > best) { best = r; bestIdx = i; bestDeep = deepest; }
+          else if (best === -1 && deepest > bestDeep) { bestDeep = deepest; bestIdx = i; }
+        }
+        if (nid !== undefined) activeAltBranches[nid] = bestIdx;
+        return best;
+      }
+      case 'group': return walk(node.body, pos);
+      case 'quantifier': {
+        const lo = node.min || 0, hi = node.max === undefined ? Infinity : node.max;
+        let p = pos, count = 0;
+        while (count < hi) { const r = walk(node.body, p); if (r <= p) break; p = r; count++; }
+        return count >= lo ? p : -1;
+      }
+      case 'lookahead': {
+        try {
+          if (new RegExp(astToPattern(node), ci ? 'i' : '').test(testStr.substring(pos))) return pos;
+        } catch(e) {}
+        return -1;
+      }
+      default: return pos;
+    }
+  }
+
+  walk(currentAST, 0);
+  return deepest;
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// MATCH SIMULATION — Generate animation steps from test string
+// ═══════════════════════════════════════════════════════════════
+
+function simulateMatch(pattern, flags, testStr) {
+  const steps = [];
+  try {
+    const re = new RegExp(pattern, flags || '');
+    const match = re.exec(testStr);
+
+    if (match) {
+      if (currentAST) {
+        // Shadow regex: convert all (?:) to () so every group captures.
+        // Then walk the AST with shifted capture indices to resolve branches.
+        try {
+          const shadowPat = pattern.replace(/\(\?:/g, '(');
+          const shadowMatch = new RegExp(shadowPat, flags || '').exec(testStr);
+          if (shadowMatch) {
+            // Walk AST using shadow match — every group now captures
+            const active = {};
+            let shadowGroupIdx = 0;
+            function walkShadow(node) {
+              if (!node) return;
+              switch (node.type) {
+                case 'alternation': {
+                  const nid = node._nid;
+                  if (nid === undefined) break;
+                  node.alternatives.forEach(alt => walkShadow(alt));
+                  break;
+                }
+                case 'group': {
+                  shadowGroupIdx++;
+                  const si = shadowGroupIdx;
+                  if (shadowMatch[si] !== undefined && node.body && node.body.type === 'alternation') {
+                    const altNode = node.body;
+                    const nid = altNode._nid;
+                    if (nid !== undefined) {
+                      const captured = shadowMatch[si];
+                      for (let i = 0; i < altNode.alternatives.length; i++) {
+                        try {
+                          if (new RegExp('^(?:' + astToPattern(altNode.alternatives[i]) + ')$', currentFlags).test(captured)) {
+                            active[nid] = i;
+                            break;
+                          }
+                        } catch(e) {}
+                      }
+                    }
+                  }
+                  walkShadow(node.body);
+                  break;
+                }
+                case 'sequence': (node.elements || []).forEach(el => walkShadow(el)); break;
+                case 'quantifier': walkShadow(node.body); break;
+                case 'lookahead': walkShadow(node.body); break;
+              }
+            }
+            walkShadow(currentAST);
+            activeAltBranches = active;
+            // Fill in defaults for any still-unresolved alternations
+            function fillDefaults(node) {
+              if (!node) return;
+              if (node.type === 'alternation' && node._nid !== undefined && active[node._nid] === undefined) {
+                active[node._nid] = 0;
+              }
+              if (node.alternatives) node.alternatives.forEach(fillDefaults);
+              if (node.body) fillDefaults(node.body);
+              if (node.elements) node.elements.forEach(fillDefaults);
+            }
+            fillDefaults(currentAST);
+          } else {
+            activeAltBranches = determineActiveBranches(currentAST, match);
+          }
+        } catch(e) {
+          activeAltBranches = determineActiveBranches(currentAST, match);
+        }
+      }
+      const str = match[0], start = match.index;
+
+      for (let i = 0; i <= str.length; i++) {
+        steps.push({
+          charIndex: start + i, char: str[i] || '', status: 'advance',
+          progress: i / Math.max(str.length, 1)
+        });
+      }
+      steps[steps.length - 1].status = 'match';
+      return { steps, matched: true, matchStr: str, startIdx: start, groups: match };
+    } else {
+      // Resolve branches from partial match for fail-position detection
+      if (currentAST) {
+        try {
+          const pp = buildPartialPattern(currentAST);
+          const pm = pp ? new RegExp(pp, flags || '').exec(testStr) : null;
+          activeAltBranches = determineActiveBranches(currentAST, pm, true);
+        } catch(e) {
+          activeAltBranches = determineActiveBranches(currentAST, null, true);
+        }
+      }
+      const failAt = findFailPosition(pattern, flags, testStr);
+
+      // Map fail position to path progress using arc-length between visible nodes
+      const pts = buildPathPoints();
+      const visIdxs = [];
+      pts.forEach((p, i) => { if (p.type && !p.type.startsWith('_') && p.type !== 'anchor') visIdxs.push(i); });
+      const arcAt = [0]; let totalArc = 0;
+      for (let i = 1; i < pts.length; i++) {
+        totalArc += Math.hypot(pts[i].x - pts[i-1].x, pts[i].y - pts[i-1].y);
+        arcAt.push(totalArc);
+      }
+      const frac = idx => totalArc > 0 ? arcAt[idx] / totalArc : 0;
+
+      steps.push({ charIndex: 0, char: '', status: 'advance', progress: 0 });
+      const count = Math.min(failAt, visIdxs.length);
+      for (let i = 0; i < count; i++) {
+        steps.push({ charIndex: i, char: testStr[i] || '', status: 'advance', progress: frac(visIdxs[i]) });
+      }
+      const failVis = Math.min(failAt, visIdxs.length - 1);
+      steps.push({ charIndex: failAt, char: testStr[failAt] || '', status: 'fail', progress: frac(visIdxs[failVis]) });
+      return { steps, matched: false, failIndex: failAt };
+    }
+  } catch (e) {
+    steps.push({ charIndex: 0, char: '', status: 'fail', progress: 0 });
+    return { steps, matched: false, error: e.message };
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// ANIMATION ENGINE — Photon traversal with trail line
+// ═══════════════════════════════════════════════════════════════
+
+let animSteps = [], animFrame = null, currentStep = 0, isAnimating = false;
+
+// Build ordered waypoints for the active path through the diagram
+function buildPathPoints() {
+  const nodes = nodePositions.filter(n => {
+    if (n.type === '_start' || n.type === '_end' || n.type === 'alternation' || n.type === 'group' || n.type === 'quantifier' || n.type === 'lookahead') return false;
+    if (n.altContext && n.altContext.length > 0) {
+      return n.altContext.every(ac => activeAltBranches[ac.altNid] === ac.branchIdx);
+    }
+    return true;
+  });
+  const startN = nodePositions.find(n => n.type === '_start');
+  const endN = nodePositions.find(n => n.type === '_end');
+  nodes.sort((a, b) => a.x - b.x || a.id - b.id);
+
+  const pts = [];
+  if (startN) pts.push({ x: startN.x + startN.w / 2, y: startN.y + startN.h / 2, nid: startN.id, type: startN.type });
+  nodes.forEach(n => pts.push({ x: n.x + n.w / 2, y: n.y + n.h / 2, nid: n.id, type: n.type }));
+  if (endN) pts.push({ x: endN.x + endN.w / 2, y: endN.y + endN.h / 2, nid: endN.id, type: endN.type });
+  return pts;
+}
+
+// ── Path geometry cache (rebuilt once per animation, not per frame) ──
+let cachedPts = null, cachedSegs = null, cachedLen = 0;
+
+function cachePath() {
+  cachedPts = buildPathPoints();
+  cachedSegs = []; cachedLen = 0;
+  for (let i = 0; i < cachedPts.length - 1; i++) {
+    const d = Math.hypot(cachedPts[i+1].x - cachedPts[i].x, cachedPts[i+1].y - cachedPts[i].y);
+    cachedSegs.push(d); cachedLen += d;
+  }
+}
+
+// Map 0-1 progress to x,y position along cached path
+function getPosition(progress) {
+  const pts = cachedPts || buildPathPoints();
+  if (pts.length < 2) return { x: pts[0]?.x || 50, y: pts[0]?.y || 40 };
+
+  const t = Math.max(0, Math.min(1, progress));
+  let segs = cachedSegs, total = cachedLen;
+  if (!segs) {
+    total = 0; segs = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const d = Math.hypot(pts[i+1].x - pts[i].x, pts[i+1].y - pts[i].y);
+      segs.push(d); total += d;
+    }
+  }
+  if (total === 0) return { x: pts[0].x, y: pts[0].y };
+
+  const target = t * total;
+  let acc = 0;
+  for (let i = 0; i < segs.length; i++) {
+    if (acc + segs[i] >= target) {
+      const segT = (target - acc) / segs[i];
+      return { x: pts[i].x + (pts[i+1].x - pts[i].x) * segT, y: pts[i].y + (pts[i+1].y - pts[i].y) * segT };
+    }
+    acc += segs[i];
+  }
+  return { x: pts[pts.length - 1].x, y: pts[pts.length - 1].y };
+}
+
+// Linear — no per-step slowdown, constant photon speed
+function easeInOut(t) { return t; }
+
+// ── Photon element management ──
+let photonEl = null, trailLineEl = null, trailPts = [];
+
+function ensurePhoton(svg) {
+  if (photonEl) return;
+  trailPts = [];
+  // Trail line — drawn behind the photon as it moves
+  trailLineEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  trailLineEl.setAttribute('class', 'trail-line');
+  trailLineEl.setAttribute('d', '');
+  svg.appendChild(trailLineEl);
+  // The photon dot
+  photonEl = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  photonEl.setAttribute('r', '6');
+  photonEl.setAttribute('class', 'photon');
+  svg.appendChild(photonEl);
+}
+
+function removePhoton(keepTrail) {
+  if (photonEl) { photonEl.remove(); photonEl = null; }
+  if (!keepTrail && trailLineEl) { trailLineEl.remove(); trailLineEl = null; }
+  trailPts = [];
+}
+
+function setPhotonPos(x, y, status) {
+  if (!photonEl) return;
+  photonEl.setAttribute('cx', x);
+  photonEl.setAttribute('cy', y);
+  photonEl.setAttribute('class', status === 'fail' ? 'photon-fail' : status === 'match' ? 'photon-success' : 'photon');
+
+  // Extend trail line
+  trailPts.push({ x, y });
+  if (trailLineEl && trailPts.length > 0) {
+    let d = `M${trailPts[0].x.toFixed(1)},${trailPts[0].y.toFixed(1)}`;
+    for (let i = 1; i < trailPts.length; i++) {
+      d += ` L${trailPts[i].x.toFixed(1)},${trailPts[i].y.toFixed(1)}`;
+    }
+    trailLineEl.setAttribute('d', d);
+    trailLineEl.setAttribute('class', status === 'fail' ? 'trail-line-fail' : 'trail-line');
+  }
+}
+
+// Light up nodes along the matched path (green for success, red for fail point)
+// Node types that should not be individually lit (containers, internal waypoints)
+const SKIP_LIGHT = new Set(['group', 'quantifier', 'alternation', 'lookahead', '_start', '_end', '_wp']);
+
+function lightPathNodes(photonX, isFail) {
+  const svg = document.getElementById('diagram');
+  if (!svg) return;
+  const litQuantNids = new Set();
+
+  // Light every node whose centre is behind the photon's x position
+  for (const np of nodePositions) {
+    if (SKIP_LIGHT.has(np.type)) continue;
+    const cx = np.x + np.w / 2;
+    if (cx > photonX) continue;
+    const el = svg.querySelector(`[data-nid="${np.id}"]`);
+    if (!el) continue;
+    el.classList.add('node-lit');
+    // Track quantifier parents for loop-track lighting
+    const qp = nodePositions.find(n => n.type === 'quantifier' && np.x >= n.x && np.x <= n.x + n.w && np.y >= n.y && np.y <= n.y + n.h);
+    if (qp) litQuantNids.add(qp.id);
+  }
+
+  // Mark the closest node to photon as the fail point
+  if (isFail) {
+    let closest = null, minDist = Infinity;
+    for (const np of nodePositions) {
+      if (SKIP_LIGHT.has(np.type)) continue;
+      const d = Math.abs(np.x + np.w / 2 - photonX);
+      if (d < minDist) { minDist = d; closest = np; }
+    }
+    if (closest) {
+      const el = svg.querySelector(`[data-nid="${closest.id}"]`);
+      if (el) { el.classList.remove('node-lit'); el.classList.add('node-fail-lit'); }
+    }
+  }
+  // Light loop tracks for quantifiers whose children are lit
+  litQuantNids.forEach(qid => {
+    svg.querySelectorAll(`[data-seg="loop-${qid}"]`).forEach(el => { el.setAttribute('class', 'loop-track-lit'); });
+    svg.querySelectorAll(`[data-seg="skip-${qid}"]`).forEach(el => { el.setAttribute('class', 'loop-track-lit'); });
+  });
+  // Light group borders when the photon has passed through them
+  for (const gn of nodePositions) {
+    if (gn.type !== 'group') continue;
+    const el = svg.querySelector(`.node-group[data-nid="${gn.id}"]`);
+    if (el && photonX >= gn.x) el.classList.add('group-lit');
+  }
+}
+
+function clearNodeLighting() {
+  const svg = document.getElementById('diagram');
+  if (!svg) return;
+  svg.querySelectorAll('.node-lit,.node-fail-lit,.node-hit').forEach(el => {
+    el.classList.remove('node-lit', 'node-fail-lit', 'node-hit');
+  });
+  svg.querySelectorAll('.group-lit').forEach(el => { el.classList.remove('group-lit'); });
+  svg.querySelectorAll('.loop-track-lit').forEach(el => { el.setAttribute('class', 'loop-track'); });
+}
+
+// ── Derailment — photon falls with gravity ──
+let derailAnim = null;
+
+function derailPhoton(x, y) {
+  if (!photonEl) return;
+  setPhotonPos(x, y, 'fail');
+  if (trailLineEl) trailLineEl.setAttribute('class', 'trail-line-fail');
+
+  let vy = -3, vx = (Math.random() - 0.5) * 4, px = x, py = y, opacity = 1;
+  function fall() {
+    vy += 0.8; py += vy; px += vx; vx *= 0.98; opacity -= 0.03;
+    if (opacity <= 0 || !photonEl) { removePhoton(true); return; }
+    photonEl.setAttribute('cx', px);
+    photonEl.setAttribute('cy', py);
+    photonEl.style.opacity = opacity;
+    derailAnim = requestAnimationFrame(fall);
+  }
+  derailAnim = requestAnimationFrame(fall);
+}
+
+// ── Main animation loop ──
+function animateSteps(steps, msPerStep = 140) {
+  if (isAnimating) stopAnimation();
+  isAnimating = true;
+  currentStep = 0;
+  animSteps = steps;
+  trailPts = [];
+  clearNodeLighting();
+  cachePath();
+
+  const svg = document.getElementById('diagram');
+  ensurePhoton(svg);
+  const scrubber = document.getElementById('scrubber');
+  scrubber.max = steps.length - 1;
+  scrubber.value = 0;
+
+  let startTime = null, prevStep = -1;
+
+  function frame(ts) {
+    if (!isAnimating) return;
+    if (!startTime) startTime = ts;
+
+    const rawT = (ts - startTime) / (steps.length * msPerStep);
+
+    if (rawT >= 1) {
+      // Animation complete — handle final state
+      const last = steps[steps.length - 1];
+      const pos = getPosition(last.progress);
+      currentStep = steps.length - 1;
+      scrubber.value = currentStep;
+      document.getElementById('scrub-label').textContent = `Step ${currentStep + 1}/${steps.length}`;
+
+      if (last.status === 'fail') {
+        setPhotonPos(pos.x, pos.y, 'advance');
+        lightPathNodes(pos.x, true);
+
+        derailPhoton(pos.x, pos.y);
+      } else if (last.status === 'match') {
+        setPhotonPos(pos.x, pos.y, 'match');
+        lightPathNodes(pos.x, false);
+
+        // Trail line goes green on match (tracks stay neutral)
+        if (trailLineEl) { trailLineEl.style.stroke = 'var(--emerald)'; trailLineEl.style.filter = 'url(#glowSmall)'; }
+      }
+      isAnimating = false;
+      return;
+    }
+
+    // Interpolate between steps with easing
+    const stepF = rawT * steps.length;
+    const si = Math.min(Math.floor(stepF), steps.length - 2);
+    const t = easeInOut(Math.min(1, stepF - si));
+    const s0 = steps[si], s1 = steps[Math.min(si + 1, steps.length - 1)];
+    const prog = s0.progress + (s1.progress - s0.progress) * t;
+    const pos = getPosition(prog);
+
+    setPhotonPos(pos.x, pos.y, s0.status);
+
+    if (si !== prevStep) {
+      prevStep = si;
+      currentStep = si;
+      scrubber.value = si;
+      document.getElementById('scrub-label').textContent = `Step ${si + 1}/${steps.length}`;
+    }
+    clearNodeLighting();
+    lightPathNodes(pos.x, false);
+
+    animFrame = requestAnimationFrame(frame);
+  }
+
+  animFrame = requestAnimationFrame(frame);
+}
+
+function stopAnimation() {
+  isAnimating = false;
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  if (derailAnim) { cancelAnimationFrame(derailAnim); derailAnim = null; }
+}
+
+function onScrub(val) {
+  stopAnimation();
+  const step = animSteps[val];
+  if (!step) return;
+  currentStep = parseInt(val);
+  ensurePhoton(document.getElementById('diagram'));
+  trailPts = [];
+  const pos = getPosition(step.progress);
+  setPhotonPos(pos.x, pos.y, step.status);
+  clearNodeLighting();
+  lightPathNodes(pos.x, step.status === 'fail');
+
+  document.getElementById('scrub-label').textContent = `Step ${currentStep + 1}/${animSteps.length}`;
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// TEST RUNNER — Execute regex against input, animate result
+// ═══════════════════════════════════════════════════════════════
+
+let currentPattern = '', currentFlags = '', currentExplanation = '';
+let testHistory = [];
+
+function runTest(str) {
+  const input = str || document.getElementById('test-input').value;
+  if (!input || !currentPattern) return;
+
+  stopAnimation();
+  removePhoton();
+  // Clean up any leftover trail/track state
+  const svg = document.getElementById('diagram');
+  svg.querySelectorAll('.trail-line,.trail-line-fail').forEach(el => el.remove());
+  // Tracks stay neutral — only trail line shows the path
+
+  const result = simulateMatch(currentPattern, currentFlags, input);
+  animateSteps(result.steps);
+
+  testHistory.unshift({ str: input, matched: result.matched, failIndex: result.failIndex, matchStr: result.matchStr });
+  if (testHistory.length > 20) testHistory.pop();
+  renderHistory();
+  if (!str) document.getElementById('test-input').value = '';
+}
+
+function renderHistory() {
+  document.getElementById('history-list').innerHTML = testHistory.map((h, i) => `
+    <div class="hist-item" onclick="replayHistory(${i})">
+      <span class="hist-dot ${h.matched ? 'match' : 'fail'}"></span>
+      <span class="hist-str">"${escHtml(h.str)}"</span>
+      <span class="hist-info">${h.matched ? 'Match' : 'Fail @' + (h.failIndex !== undefined ? h.failIndex : '?')}</span>
+    </div>
+  `).join('');
+}
+
+function replayHistory(idx) { if (testHistory[idx]) runTest(testHistory[idx].str); }
+
+
+// ═══════════════════════════════════════════════════════════════
+// HOVER HIGHLIGHT — SVG nodes ↔ pattern bar bidirectional linking
+// ═══════════════════════════════════════════════════════════════
+
+// Walk AST to produce HTML spans tagged with nid for each regex element
+function buildPatternHTML(ast) {
+  if (!ast) return '';
+  const nid = ast._nid;
+  const w = (text, n) => `<span class="pat-span" data-nid="${n}">${escHtml(text)}</span>`;
+
+  switch (ast.type) {
+    case 'literal': {
+      const c = ast.value;
+      let raw = c;
+      if (c.length === 1 && /[.*+?^${}()|[\]\\]/.test(c)) raw = '\\' + c;
+      else if (c === '\\n') raw = '\\n';
+      else if (c === '\\t') raw = '\\t';
+      else if (c === '\\r') raw = '\\r';
+      return w(raw, nid);
+    }
+    case 'charClass': return w((ast.negated ? '[^' : '[') + ast.chars + ']', nid);
+    case 'dot': return w('.', nid);
+    case 'anchor': return w(anchorLabel(ast.kind), nid);
+    case 'backreference': return w('\\' + ast.index, nid);
+    case 'sequence': return ast.elements.map(buildPatternHTML).join('');
+    case 'alternation':
+      return ast.alternatives.map((alt, i) =>
+        (i > 0 ? `<span class="pat-span" data-nid="${nid}">|</span>` : '') + buildPatternHTML(alt)
+      ).join('');
+    case 'quantifier': {
+      let inner = buildPatternHTML(ast.body);
+      if (ast.body.type === 'alternation' || ast.body.type === 'sequence') inner = '(?:' + inner + ')';
+      let q = '';
+      if (ast.min === 0 && ast.max === 1) q = '?';
+      else if (ast.min === 0 && ast.max === Infinity) q = '*';
+      else if (ast.min === 1 && ast.max === Infinity) q = '+';
+      else if (ast.min === ast.max) q = '{' + ast.min + '}';
+      else if (ast.max === Infinity) q = '{' + ast.min + ',}';
+      else q = '{' + ast.min + ',' + ast.max + '}';
+      if (ast.lazy) q += '?';
+      return inner + w(q, nid);
+    }
+    case 'group': {
+      const open = ast.name ? '(?&lt;' + escHtml(ast.name) + '&gt;' : ast.capture ? '(' : '(?:';
+      return `<span class="pat-span" data-nid="${nid}">${open}</span>` +
+             buildPatternHTML(ast.body) +
+             `<span class="pat-span" data-nid="${nid}">)</span>`;
+    }
+    case 'lookahead': {
+      const open = ast.positive ? '(?=' : '(?!';
+      return `<span class="pat-span" data-nid="${nid}">${escHtml(open)}</span>` +
+             buildPatternHTML(ast.body) +
+             `<span class="pat-span" data-nid="${nid}">)</span>`;
+    }
+    default: return '';
+  }
+}
+
+// Map each nid to its parent group's nid (for highlighting enclosing group on hover)
+function buildGroupMap(ast, parentNid) {
+  const map = {};
+  if (!ast) return map;
+  const nid = ast._nid;
+  if (parentNid !== undefined) map[nid] = parentNid;
+  switch (ast.type) {
+    case 'sequence': ast.elements.forEach(el => Object.assign(map, buildGroupMap(el, parentNid))); break;
+    case 'alternation': ast.alternatives.forEach(alt => Object.assign(map, buildGroupMap(alt, parentNid))); break;
+    case 'quantifier': Object.assign(map, buildGroupMap(ast.body, parentNid)); break;
+    case 'group': case 'lookahead': Object.assign(map, buildGroupMap(ast.body, nid)); break;
+  }
+  return map;
+}
+
+let groupMap = {};
+
+function wireHoverHighlight() {
+  const svgEl = document.getElementById('diagram');
+  const patEl = document.getElementById('pattern-display');
+
+  // Node hover — highlight corresponding pattern text
+  svgEl.querySelectorAll('[data-nid]').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      const nid = el.getAttribute('data-nid');
+      el.classList.add('svg-node-hover');
+      patEl.querySelectorAll(`.pat-span[data-nid="${nid}"]`).forEach(s => s.classList.add('pat-hover'));
+      const gid = groupMap[nid];
+      if (gid !== undefined) patEl.querySelectorAll(`.pat-span[data-nid="${gid}"]`).forEach(s => s.classList.add('pat-group-hover'));
+    });
+    el.addEventListener('mouseleave', () => {
+      const nid = el.getAttribute('data-nid');
+      el.classList.remove('svg-node-hover');
+      patEl.querySelectorAll(`.pat-span[data-nid="${nid}"]`).forEach(s => s.classList.remove('pat-hover'));
+      const gid = groupMap[nid];
+      if (gid !== undefined) patEl.querySelectorAll(`.pat-span[data-nid="${gid}"]`).forEach(s => s.classList.remove('pat-group-hover'));
+    });
+  });
+
+  // Loop/skip arc hover — light up and highlight quantifier text in pattern bar
+  svgEl.querySelectorAll('[data-seg^="loop-"],[data-seg^="skip-"]').forEach(el => {
+    const nid = el.getAttribute('data-seg').replace(/^(loop|skip)-/, '');
+    el.style.cursor = 'pointer';
+    el.addEventListener('mouseenter', () => {
+      svgEl.querySelectorAll(`[data-seg="loop-${nid}"],[data-seg="skip-${nid}"]`).forEach(p => p.classList.add('loop-track-hover'));
+      patEl.querySelectorAll(`.pat-span[data-nid="${nid}"]`).forEach(s => s.classList.add('pat-hover'));
+    });
+    el.addEventListener('mouseleave', () => {
+      svgEl.querySelectorAll(`[data-seg="loop-${nid}"],[data-seg="skip-${nid}"]`).forEach(p => p.classList.remove('loop-track-hover'));
+      patEl.querySelectorAll(`.pat-span[data-nid="${nid}"]`).forEach(s => s.classList.remove('pat-hover'));
+    });
+  });
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// DIAGRAM BUILDER — Parse pattern, render SVG, wire everything
+// ═══════════════════════════════════════════════════════════════
+
+function rebuildDiagram(data) {
+  currentPattern = data.pattern;
+  currentFlags = data.flags || '';
+  currentExplanation = data.explanation || '';
+  document.getElementById('explanation-text').textContent = currentExplanation || 'No explanation provided.';
+
+  try {
+    const ast = parseRegex(currentPattern);
+    currentAST = ast;
+    const { svg, width, height } = buildDiagram(ast);
+    const svgEl = document.getElementById('diagram');
+    const defs = svgEl.querySelector('defs').outerHTML;
+    svgEl.innerHTML = defs + svg;
+    svgEl.setAttribute('width', width);
+    svgEl.setAttribute('height', height);
+    svgEl.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+    // Interactive pattern bar with hover linking
+    document.getElementById('pattern-display').innerHTML = '/' + buildPatternHTML(currentAST) + '/' + escHtml(currentFlags);
+    groupMap = buildGroupMap(currentAST);
+    wireHoverHighlight();
+  } catch (e) {
+    console.error('Parse error:', e);
+    document.getElementById('pattern-display').textContent = '/' + currentPattern + '/' + currentFlags;
+  }
+
+  // Reset animation state
+  stopAnimation();
+  removePhoton();
+  animSteps = [];
+  cachedPts = null; cachedSegs = null;
+  document.getElementById('scrubber').max = 0;
+  document.getElementById('scrubber').value = 0;
+  document.getElementById('scrub-label').textContent = 'Step 0/0';
+
+  // Auto-run test cases if provided
+  if (data.testCases && data.testCases.length > 0) {
+    testHistory = [];
+    data.testCases.forEach(tc => {
+      const r = simulateMatch(currentPattern, currentFlags, tc.input);
+      testHistory.push({ str: tc.input, matched: r.matched, failIndex: r.failIndex, matchStr: r.matchStr, expected: tc.shouldMatch });
+    });
+    renderHistory();
+    runTest(data.testCases[0].input);
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// LIVE UPDATE POLLER — Watches data.json for changes from Claude
+// ═══════════════════════════════════════════════════════════════
+
+let lastDataHash = '';
+
+setInterval(async () => {
+  try {
+    const res = await fetch('/data.json?t=' + Date.now());
+    if (!res.ok) return;
+    const text = await res.text();
+    if (text === lastDataHash) return;
+    lastDataHash = text;
+    const data = JSON.parse(text);
+    if (data.pattern !== currentPattern || data.explanation !== currentExplanation || data.flags !== currentFlags) {
+      rebuildDiagram(data);
+    }
+  } catch (e) { /* server not ready */ }
+}, 500);
+
+
+// ═══════════════════════════════════════════════════════════════
+// EVENT HANDLERS
+// ═══════════════════════════════════════════════════════════════
+
+document.getElementById('test-input').addEventListener('keydown', e => { if (e.key === 'Enter') runTest(); });
+
+function toggleHelp() { document.getElementById('help-modal').classList.toggle('visible'); }
+
+// Initial load
+fetch('/data.json?t=' + Date.now())
+  .then(r => r.ok ? r.text() : null)
+  .then(text => { if (text) { lastDataHash = text; rebuildDiagram(JSON.parse(text)); } })
+  .catch(() => {});
+</script>
+</body>
+</html>

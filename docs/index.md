@@ -9,7 +9,7 @@
    ╚════╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝  ╚═════╝
 
             C:\> jord0.skills
-    13 production skills for Claude Code
+    14 production skills for Claude Code
 ```
 
 </div>
@@ -18,7 +18,7 @@
 
 # Copy a Folder. Get a Superpower.
 
-**jord0.skills** is a collection of 13 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview). No build step. No dependencies. No configuration.
+**jord0.skills** is a collection of 14 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview). No build step. No dependencies. No configuration.
 
 ## Install — Two Commands
 
@@ -27,7 +27,7 @@ git clone https://github.com/jord0-cmd/jord0.skills.git
 cp -r jord0.skills/skills/* ~/.claude/skills/
 ```
 
-That's it. All 13 skills are installed. Start a Claude Code session and use them immediately.
+That's it. All 14 skills are installed. Start a Claude Code session and use them immediately.
 
 !!! note "Most skills are zero-dependency"
     OPTIC requires Python + a Gemini API key, LOCUS requires a React environment, and NOTIFY needs BurntToast (WSL) or libnotify (Linux). Everything else works out of the box. See the [Installation Guide](getting-started/install.md) for details.
@@ -47,6 +47,7 @@ That's it. All 13 skills are installed. Start a Claude Code session and use them
 
 | Skill | What It Does |
 |-------|-------------|
+| [**REGTRAX**](skills/regtrax.md) | Regex railroad visualizer. Animated diagrams, photon traversal, live testing. Don't just write regex — replay it. |
 | [**REFRAX**](skills/refrax.md) | Visual code comprehension. Interactive logic spines, risk dashboards, diff views, glossary. Turn code into a visual story. |
 
 ### Context & Memory

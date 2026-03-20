@@ -1,6 +1,6 @@
 # Skills Overview
 
-13 skills. Zero dependencies (except NOTIFY and OPTIC). Copy a folder, get a superpower.
+14 skills. Zero dependencies (except NOTIFY and OPTIC). Copy a folder, get a superpower.
 
 ---
 
@@ -19,6 +19,7 @@ Tools that make Claude see code.
 
 | Skill | What It Does | Invoke |
 |-------|-------------|--------|
+| [**REGTRAX**](regtrax.md) | Regex railroad visualizer — animated diagrams, photon traversal, live testing | Describe what to match |
 | [**REFRAX**](refrax.md) | Visual code comprehension — logic spines, risk dashboards, diff views | Describe what to analyse |
 
 ## Context & Memory

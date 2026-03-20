@@ -20,7 +20,7 @@ SKILLS_DIR = REPO_ROOT / "skills"
 # All expected skills
 EXPECTED_SKILLS = [
     "PORTAL", "STRICT", "FORGE", "CONCLAVE", "NOTIFY",
-    "RECON", "RECALL", "ECHO", "MIRROR", "SPARK",
+    "RECON", "RECALL", "ECHO", "MIRROR", "SPARK", "REGTRAX",
 ]
 
 # Personal references that must never appear

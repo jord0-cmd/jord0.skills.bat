@@ -9,14 +9,14 @@
    ╚════╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝  ╚═════╝
 
   C:\> jord0.skills
-  13 production skills for Claude Code
+  14 production skills for Claude Code
 
 
 ```
 
 # jord0.skills
 
-**13 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview).** Copy a folder, get a superpower.
+**14 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview).** Copy a folder, get a superpower.
 
 By [jord0.cmd](https://github.com/jord0-cmd)
 
@@ -42,9 +42,9 @@ git clone https://github.com/jord0-cmd/jord0.skills.git
 cp -r jord0.skills/skills/* ~/.claude/skills/
 ```
 
-All 13 skills are installed. No build step, no configuration. Start a Claude Code session and use them immediately.
+All 14 skills are installed. No build step, no configuration. Start a Claude Code session and use them immediately.
 
-> **Note:** Most skills are zero-dependency. OPTIC requires Python + a Gemini API key, LOCUS requires a React environment, and NOTIFY requires platform-specific notification tools. Everything else works out of the box.
+> **Note:** Most skills are zero-dependency. OPTIC requires Python + a Gemini API key, LOCUS requires a React environment, REGTRAX requires Python 3 for its local server, and NOTIFY requires platform-specific notification tools. Everything else works out of the box.
 
 See the [full install guide](https://jord0-cmd.github.io/jord0.skills/getting-started/install/) for alternative install methods including the plugin marketplace.
 
@@ -54,6 +54,7 @@ See the [full install guide](https://jord0-cmd.github.io/jord0.skills/getting-st
 
 | Skill | What It Does | Prerequisites |
 |-------|-------------|---------------|
+| [**REGTRAX**](skills/REGTRAX/) | Regex railroad visualizer — animated diagrams, photon traversal, live testing | Python 3 |
 | [**REFRAX**](skills/REFRAX/) | Visual code comprehension — interactive logic spines, risk dashboards, diff views | Python 3 |
 | [**OPTIC**](skills/OPTIC/) | AI image generation pipeline — prompts, multi-pass, inpainting | Python 3.10+, Gemini API key |
 | [**LOCUS**](skills/LOCUS/) | Make static images interactive — hover states, warps, hotspots | React 18+ |
