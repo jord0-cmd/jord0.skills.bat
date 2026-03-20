@@ -55,6 +55,8 @@ Every regex element gets a visual node, colour-coded by type:
 
 Tracks connect nodes. Alternation branches fork visually. Quantifier loops show the repetition path. The diagram reads left-to-right, exactly how the regex engine processes the string.
 
+![REGTRAX railroad diagram showing a log parser regex with colour-coded nodes](images/regtrax-overview.png)
+
 ---
 
 ## Photon Traversal
@@ -69,6 +71,14 @@ The signature feature. Type a test string and hit Test:
 6. On **fail**: photon turns red, derails with a gravity fall at the exact failure point
 
 You can also **scrub** through the animation step-by-step using the timeline slider.
+
+<div class="grid" markdown>
+
+![Match — photon reaches the end, all tracks green](images/regtrax-match.png)
+
+![Fail — photon derails at the exact failure point](images/regtrax-fail.png)
+
+</div>
 
 ---
 
