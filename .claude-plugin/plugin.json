@@ -1,7 +1,7 @@
 {
   "name": "jord0-skills",
-  "description": "18 production-grade skills for Claude Code: regex railroad visualization, AI image generation, interactive image mapping, visual code comprehension, contract analysis, forensic timelines, threat modeling, financial visualization, context portals, coding standards, project onboarding, structured debates, desktop notifications, deep research, knowledge recall, decision logging, counterarguments, and divergent thinking.",
-  "version": "1.4.0",
+  "description": "14 production-grade skills for Claude Code: regex railroad visualization, AI image generation, interactive image mapping, visual code comprehension, context portals, coding standards, project onboarding, structured debates, desktop notifications, deep research, knowledge recall, decision logging, counterarguments, and divergent thinking.",
+  "version": "1.3.0",
   "author": {
     "name": "jord0.cmd",
     "url": "https://github.com/jord0-cmd"
@@ -26,12 +26,6 @@
     "creative-tools",
     "code-review",
     "visualization",
-    "regex",
-    "legal",
-    "contract-analysis",
-    "threat-modeling",
-    "security",
-    "financial-visualization",
-    "timeline"
+    "regex"
   ]
 }

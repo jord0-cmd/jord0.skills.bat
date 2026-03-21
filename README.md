@@ -9,14 +9,14 @@
    ╚════╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝  ╚═════╝
 
   C:\> jord0.skills
-  18 production skills for Claude Code
+  14 production skills for Claude Code
 
 
 ```
 
 # jord0.skills
 
-**18 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview).** Copy a folder, get a superpower.
+**14 production-grade skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview).** Copy a folder, get a superpower.
 
 By [jord0.cmd](https://github.com/jord0-cmd)
 
@@ -42,9 +42,9 @@ git clone https://github.com/jord0-cmd/jord0.skills.git
 cp -r jord0.skills/skills/* ~/.claude/skills/
 ```
 
-All 18 skills are installed. No build step, no configuration. Start a Claude Code session and use them immediately.
+All 14 skills are installed. No build step, no configuration. Start a Claude Code session and use them immediately.
 
-> **Note:** Most skills are zero-dependency. OPTIC requires Python + a Gemini API key, LOCUS requires a React environment, REGTRAX/REFRAX/ARBITER/WITNESS/THREATMAP/LEDGER require Python 3 for their local servers, and NOTIFY requires platform-specific notification tools. Everything else works out of the box.
+> **Note:** Most skills are zero-dependency. OPTIC requires Python + a Gemini API key, LOCUS requires a React environment, REGTRAX requires Python 3 for its local server, and NOTIFY requires platform-specific notification tools. Everything else works out of the box.
 
 See the [full install guide](https://jord0-cmd.github.io/jord0.skills/getting-started/install/) for alternative install methods including the plugin marketplace.
 
@@ -68,10 +68,6 @@ See the [full install guide](https://jord0-cmd.github.io/jord0.skills/getting-st
 | [**RECON**](skills/RECON/) | Deep research that persists to a knowledge base | WebSearch access |
 | [**RECALL**](skills/RECALL/) | Search your knowledge base before searching the web | Knowledge base |
 | [**NOTIFY**](skills/NOTIFY/) | Cross-platform desktop notifications with interactive buttons | See below |
-| [**ARBITER**](skills/ARBITER/) | Contract clause flow analyzer — risk visualization, breach cascades, redline suggestions | Python 3 |
-| [**WITNESS**](skills/WITNESS/) | Forensic timeline reconstructor — multi-source event correlation, contradiction detection | Python 3 |
-| [**THREATMAP**](skills/THREATMAP/) | Visual threat model generator — STRIDE analysis, attack path simulation | Python 3 |
-| [**LEDGER**](skills/LEDGER/) | Kinetic financial visualizer — cash flow projections, runway analysis, scenario modeling | Python 3 |
 
 ---
 
@@ -127,7 +123,7 @@ The design principles:
 1. **Self-contained** — each skill works by copying one folder
 2. **No lock-in** — standard markdown, standard JSON, no proprietary formats
 3. **Prerequisites are documented** — if a skill needs something, it tells you
-4. **Quality over quantity** — 18 skills that work perfectly > 100 that kinda work
+4. **Quality over quantity** — 13 skills that work perfectly > 100 that kinda work
 
 ---
 
