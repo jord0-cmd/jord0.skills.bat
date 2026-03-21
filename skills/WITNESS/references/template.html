@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WITNESS</title>
+<style>
+/* ── Reset & Theme ──────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080c14;--surface:#0d1520;--border:#1e2d42;--text:#e2e8f0;--dim:#7a8ba3;
+  --band:rgba(255,255,255,0.02);--scanline:rgba(255,255,255,0.015);
+  /* Source colours */
+  --machine:#00E5FF;--human:#FFB300;--document:#B388FF;--financial:#FFD54F;--visual:#34d399;
+  --machine-dim:#008B99;--human-dim:#CC5500;--document-dim:#651FFF;--financial-dim:#FF8F00;--visual-dim:#059669;
+  /* Functional colours */
+  --inference:#E5B567;--conflict:#FF0055;--gap-pulse:#FF3366;--reticle:rgba(255,255,255,0.5);
+  --ghost:#4A5568;
+  /* Fonts */
+  --font-mono:'Cascadia Code','Fira Code','JetBrains Mono',monospace;
+  --font-logic:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  /* Layout */
+  --matrix-width:280px;--spectrometer-width:360px;--core-height:56px;
+  --track-height:76px;--track-gap:2px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-mono);font-size:15px;overflow:hidden}
+body{background-image:linear-gradient(var(--scanline) 1px,transparent 1px);background-size:100% 3px}
+
+/* Scrollbars */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--dim)}
+
+/* ── Layout ────────────────────────────────────────────────── */
+#app{display:flex;flex-direction:column;height:100vh}
+header{display:flex;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface)}
+header h1{font-size:18px;letter-spacing:5px;color:var(--machine);text-shadow:0 0 10px rgba(0,229,255,0.4);flex-shrink:0}
+#case-info{flex:1;font-family:var(--font-logic);font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#header-controls{display:flex;gap:6px;flex-shrink:0}
+.hdr-btn{height:26px;padding:0 10px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--dim);cursor:pointer;font-family:var(--font-logic);font-size:10px;font-weight:600;letter-spacing:1px;transition:all .2s}
+.hdr-btn:hover{border-color:var(--machine);color:var(--machine)}
+.hdr-btn.active{color:var(--machine);border-color:var(--machine);text-shadow:0 0 6px rgba(0,229,255,0.4)}
+
+/* ── Main Area ─────────────────────────────────────────────── */
+#main{flex:1;display:flex;min-height:0;overflow:hidden}
+
+/* ── Source Matrix (Left) ──────────────────────────────────── */
+#source-matrix{width:var(--matrix-width);flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;background:var(--surface)}
+#matrix-header{padding:10px 12px 6px;font-family:var(--font-logic);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--border)}
+#entity-roster{flex:1;overflow-y:auto;padding:6px 8px}
+.entity-row{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:4px;cursor:pointer;transition:background .15s;border-left:3px solid transparent}
+.entity-row:hover{background:rgba(255,255,255,0.03)}
+.entity-row.highlighted{background:rgba(0,229,255,0.06);border-left-color:var(--machine)}
+.entity-token{font-weight:800;font-size:10px;color:#fff;letter-spacing:1px;min-width:36px}
+.entity-name{font-family:var(--font-logic);font-size:11px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entity-type{font-family:var(--font-logic);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px}
+.entity-count{font-size:10px;color:var(--dim);background:var(--bg);padding:1px 6px;border-radius:8px}
+.entity-toggle{width:16px;height:16px;border-radius:3px;border:1px solid var(--border);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:8px;transition:all .15s}
+.entity-toggle.on{color:var(--machine);border-color:var(--machine)}
+
+/* Fracture ledger */
+#fracture-section{border-top:1px solid var(--border);padding:6px 8px;max-height:160px;overflow-y:auto}
+#fracture-header{font-family:var(--font-logic);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--conflict);margin-bottom:4px}
+.fracture-item{display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:3px;cursor:pointer;font-family:var(--font-logic);font-size:10px;color:var(--text);transition:background .15s}
+.fracture-item:hover{background:rgba(255,0,85,0.08)}
+.fracture-dot{width:6px;height:6px;border-radius:50%;background:var(--conflict);flex-shrink:0;animation:fracturePulse 2s ease-in-out infinite}
+@keyframes fracturePulse{0%,100%{opacity:0.6}50%{opacity:1}}
+.fracture-desc{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── Trench (Center) ───────────────────────────────────────── */
+#trench-wrap{flex:1;overflow:auto;position:relative;cursor:grab}
+#trench-wrap:active{cursor:grabbing}
+#trench{position:relative;min-height:100%}
+
+/* Time axis */
+#time-axis{position:sticky;top:0;z-index:20;height:28px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:flex-end}
+.time-tick{position:absolute;bottom:0;font-family:var(--font-logic);font-size:9px;color:var(--dim);border-left:1px solid var(--border);padding:0 4px 3px;white-space:nowrap}
+
+/* Swimlane tracks */
+.track{position:relative;height:var(--track-height);border-bottom:1px solid rgba(255,255,255,0.02)}
+.track:nth-child(even){background:var(--band)}
+.track-label{position:absolute;left:0;top:0;bottom:0;width:100px;display:flex;align-items:center;padding-left:8px;font-family:var(--font-logic);font-size:10px;color:var(--dim);letter-spacing:0.5px;z-index:5;background:linear-gradient(90deg,var(--surface) 70%,transparent)}
+.track.collapsed{height:3px;min-height:3px;overflow:hidden}
+
+/* Event blocks */
+.event{position:absolute;top:4px;height:calc(var(--track-height) - 12px);border-radius:3px;cursor:pointer;display:flex;align-items:center;padding:0 10px;font-size:13px;color:var(--text);transition:filter .2s,opacity .15s,backdrop-filter .3s,border-color .2s;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;z-index:10}
+.event:hover{z-index:15}
+
+/* Event types */
+.event-fact{border-width:2px;border-style:solid;border-left-width:4px}
+.event-assertion{border-width:1px;border-style:dashed}
+.event-inference{border-width:1px;border-style:dotted;opacity:0.6}
+
+/* Source colours on events */
+.event[data-source-type="system_log"],.event[data-source-type="forensic"]{border-color:var(--machine);background:rgba(0,229,255,0.08)}
+.event[data-source-type="testimony"],.event[data-source-type="chat"]{border-color:var(--human);background:rgba(255,179,0,0.08)}
+.event[data-source-type="document"],.event[data-source-type="email"]{border-color:var(--document);background:rgba(179,136,255,0.08)}
+.event[data-source-type="financial"]{border-color:var(--financial);background:rgba(255,213,79,0.08)}
+.event[data-source-type="surveillance"],.event[data-source-type="social_media"]{border-color:var(--visual);background:rgba(52,211,153,0.08)}
+.event[data-source-type="news"]{border-color:var(--document);background:rgba(179,136,255,0.06)}
+.event[data-source-type="inference"]{border-color:var(--inference);background:rgba(229,181,103,0.06)}
+
+/* Confidence-based blur & opacity */
+.event[data-conf="veryhigh"]{filter:blur(0px);opacity:1}
+.event[data-conf="high"]{filter:blur(0px);opacity:0.85}
+.event[data-conf="medium"]{filter:blur(0.5px);opacity:0.65}
+.event[data-conf="low"]{filter:blur(1.5px);opacity:0.45}
+.event[data-conf="verylow"]{filter:blur(3px);opacity:0.25}
+
+/* Flashlight: hover snaps into focus */
+.event:hover{filter:blur(0px) !important;opacity:1 !important;box-shadow:0 0 12px rgba(255,255,255,0.1)}
+
+/* Hover hint for discoverability */
+.hover-hint{font-family:var(--font-logic);font-size:10px;color:var(--dim);opacity:0.6;animation:hintPulse 3s ease-in-out infinite;position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);white-space:nowrap;pointer-events:none}
+@keyframes hintPulse{0%,100%{opacity:0.2}50%{opacity:0.6}}
+.event.clicked{filter:blur(0px) !important;opacity:1 !important;box-shadow:0 0 16px rgba(0,229,255,0.3);z-index:20}
+
+/* Admiralty badge */
+.adm-badge{font-family:var(--font-logic);font-size:8px;font-weight:700;letter-spacing:0.5px;padding:0 4px;border-radius:3px;margin-right:4px;background:rgba(255,255,255,0.08);color:var(--text)}
+
+/* Entity token in event */
+.evt-token{font-weight:800;font-size:9px;color:#fff;letter-spacing:1px;margin-right:4px}
+
+/* Conflict zone overlay */
+.conflict-zone{position:absolute;top:0;height:100%;z-index:12;mix-blend-mode:exclusion;background:var(--conflict);opacity:0.15;pointer-events:none;border-radius:3px}
+.conflict-zone.active{opacity:0.3;animation:conflictVibrate .1s linear 2}
+@keyframes conflictVibrate{0%,100%{transform:translateX(0)}50%{transform:translateX(1px)}}
+
+/* Gap marker */
+.gap-marker{position:absolute;top:8px;height:calc(var(--track-height) - 20px);border:1px dashed rgba(255,255,255,0.3);border-radius:3px;background:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(255,255,255,0.03) 4px,rgba(255,255,255,0.03) 5px);display:flex;align-items:center;justify-content:center;z-index:8;cursor:pointer}
+.gap-pulse{width:8px;height:8px;border-radius:50%;background:var(--gap-pulse);animation:gapPulse 2s ease-in-out infinite}
+@keyframes gapPulse{0%,100%{opacity:0.4;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}
+
+/* Reticle */
+.reticle{position:absolute;top:0;bottom:0;width:1px;background:var(--reticle);z-index:25;pointer-events:none}
+.reticle-label{position:absolute;top:-24px;left:4px;font-family:var(--font-logic);font-size:9px;color:var(--text);white-space:nowrap;background:var(--surface);padding:1px 6px;border-radius:3px;border:1px solid var(--border)}
+
+/* Surveyor's Tape (SVG causal links) */
+#tape-overlay{position:absolute;top:0;left:0;pointer-events:none;z-index:22}
+.tape-line{stroke:var(--inference);stroke-width:1.5;fill:none;stroke-dasharray:5 4;opacity:0.2;transition:opacity .2s,stroke-width .2s}
+.tape-line.active{opacity:1;stroke-width:2.5;filter:drop-shadow(0 0 4px rgba(229,181,103,0.6))}
+.tape-line.taut{}
+.tape-line.slack{stroke-dasharray:8 6}
+
+/* ── Spectrometer (Right Panel) ────────────────────────────── */
+#spectrometer{width:0;flex-shrink:0;overflow:hidden;transition:width .3s cubic-bezier(0.16,1,0.3,1);border-left:1px solid var(--border);background:var(--surface)}
+#spectrometer.open{width:var(--spectrometer-width);padding:12px 14px;overflow-y:auto}
+#spec-close{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--dim);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center}
+#spec-close:hover{border-color:var(--machine);color:var(--machine)}
+#spec-title{font-family:var(--font-logic);font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;padding-right:28px}
+#spec-time{font-family:var(--font-mono);font-size:11px;color:var(--machine);margin-bottom:12px}
+#spec-desc{font-family:var(--font-logic);font-size:12px;color:var(--dim);line-height:1.6;margin-bottom:12px}
+
+/* Custody cards */
+.custody-card{border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:8px;border-left-width:3px;transition:border-color .2s}
+.custody-header{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.custody-grade{font-family:var(--font-mono);font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,0.08)}
+.custody-source{font-family:var(--font-logic);font-size:11px;font-weight:600;color:var(--text)}
+.custody-raw{font-family:var(--font-mono);font-size:11px;color:var(--dim);line-height:1.5;background:var(--bg);border-radius:4px;padding:6px 8px;margin:4px 0}
+.custody-meta{font-family:var(--font-logic);font-size:10px;color:var(--dim)}
+.custody-conflict{color:var(--conflict);font-weight:600}
+
+/* ── Core Sample (Bottom Minimap) ──────────────────────────── */
+#core-sample{height:var(--core-height);flex-shrink:0;border-top:1px solid var(--border);position:relative;cursor:pointer;background:var(--surface)}
+#core-canvas{width:100%;height:100%;display:block}
+#core-viewport{position:absolute;top:2px;bottom:2px;border:1px solid rgba(0,229,255,0.4);border-radius:2px;background:rgba(0,229,255,0.04);pointer-events:none;transition:left .1s ease}
+
+/* ── Help Modal ────────────────────────────────────────────── */
+#help-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:300;align-items:center;justify-content:center}
+#help-modal.visible{display:flex}
+#help-content{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:560px;width:90%;max-height:80vh;overflow-y:auto}
+#help-content h2{color:var(--machine);margin-bottom:10px;font-family:var(--font-logic);font-size:15px;letter-spacing:3px}
+#help-content h3{color:var(--text);margin:12px 0 4px;font-family:var(--font-logic);font-size:11px;letter-spacing:1px;text-transform:uppercase}
+#help-content p,#help-content li{color:var(--dim);font-family:var(--font-logic);font-size:11px;line-height:1.7;margin-bottom:3px}
+#help-content ul{padding-left:16px}
+.help-close{margin-top:14px;text-align:right}
+.help-close button{background:none;border:1px solid var(--border);border-radius:6px;padding:5px 16px;color:var(--dim);cursor:pointer;font-family:var(--font-logic);font-size:11px}
+.help-close button:hover{border-color:var(--machine);color:var(--machine)}
+
+/* ── Empty State ───────────────────────────────────────────── */
+#empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--ghost);font-family:var(--font-logic);text-align:center;padding:40px}
+#empty-state h2{font-size:13px;letter-spacing:4px;color:var(--dim);margin-bottom:10px}
+#empty-state p{font-size:11px;max-width:360px;line-height:1.7}
+
+/* ── Mobile ────────────────────────────────────────────────── */
+@media(max-width:1023px){
+  #source-matrix{display:none}
+  :root{--matrix-width:0px;--spectrometer-width:100vw}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>WITNESS</h1>
+    <div id="case-info">Awaiting telemetry. Feed the hopper.</div>
+    <div id="header-controls">
+      <button class="hdr-btn" id="track-mode-btn" onclick="toggleTrackMode()">ENTITY</button>
+      <button class="hdr-btn" onclick="toggleHelp()">?</button>
+    </div>
+  </header>
+
+  <div id="main">
+    <div id="source-matrix">
+      <div id="matrix-header">Evidence Sources</div>
+      <div id="entity-roster"></div>
+      <div id="fracture-section">
+        <div id="fracture-header">Fractures</div>
+        <div id="fracture-list"></div>
+      </div>
+    </div>
+
+    <div id="trench-wrap">
+      <div id="trench">
+        <div id="time-axis"></div>
+        <div id="track-container"></div>
+        <svg id="tape-overlay"></svg>
+      </div>
+      <div id="empty-state">
+        <h2>WITNESS</h2>
+        <p>Forensic Timeline Reconstructor. Paste evidence in the terminal — logs, transcripts, reports — and the excavation begins here.</p>
+      </div>
+    </div>
+
+    <div id="spectrometer">
+      <button id="spec-close" onclick="closeSpectrometer()">×</button>
+      <div id="spec-title"></div>
+      <div id="spec-time"></div>
+      <div id="spec-desc"></div>
+      <div id="spec-custody"></div>
+    </div>
+  </div>
+
+  <div id="core-sample">
+    <canvas id="core-canvas"></canvas>
+    <div id="core-viewport"></div>
+  </div>
+</div>
+
+<div id="help-modal" onclick="if(event.target===this)toggleHelp()">
+  <div id="help-content">
+    <h2>WITNESS</h2>
+    <p style="color:var(--text);font-size:12px;margin-bottom:10px">Forensic Timeline Reconstructor</p>
+    <h3>How It Works</h3>
+    <p>Paste evidence into the terminal — logs, interviews, reports, financial records. Claude extracts events, maps entities, grades sources, and writes the data. This page renders it as an interactive trench.</p>
+    <h3>Reading the Trench</h3>
+    <ul>
+      <li><strong style="color:var(--machine)">Cyan blocks</strong> — machine/system logs (high precision)</li>
+      <li><strong style="color:var(--human)">Amber blocks</strong> — human testimony (variable precision)</li>
+      <li><strong style="color:var(--document)">Violet blocks</strong> — documents & records</li>
+      <li><strong style="color:var(--visual)">Green blocks</strong> — visual evidence (CCTV, photos)</li>
+      <li><strong style="color:var(--text)">Sharp blocks</strong> = high confidence · <strong style="color:var(--dim)">Blurry blocks</strong> = low confidence</li>
+      <li><strong style="color:var(--conflict)">Magenta fractures</strong> — contradictions between sources</li>
+      <li><strong style="color:var(--inference)">Gold dashed lines</strong> — causal inferences (Surveyor's Tape)</li>
+    </ul>
+    <h3>Interactions</h3>
+    <ul>
+      <li><strong>Hover</strong> blurry events to snap them into focus (the Flashlight)</li>
+      <li><strong>Click</strong> events to open the Spectrometer with full source chain</li>
+      <li><strong>Click fractures</strong> (left panel) to jump to contradictions</li>
+      <li>Timeline <strong>scrolls horizontally</strong> through time</li>
+    </ul>
+    <p style="margin-top:12px;color:var(--machine);font-style:italic">"Every event has a witness. Not all stories agree."</p>
+    <div class="help-close"><button onclick="toggleHelp()">Got it</button></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let data = null;
+let lastDataHash = '';
+let trackMode = 'entity'; // 'entity' or 'source'
+let selectedEventId = null;
+let highlightedEntityId = null;
+let hiddenEntities = new Set();
+let hoverHintShown = false;
+
+// Time scale state
+let timeScale = 1; // pixels per second
+let timeOrigin = 0; // unix timestamp of left edge
+let minTime = 0;
+let maxTime = 0;
+
+const PX_PER_HOUR = 200; // base scale
+const TRACK_LABEL_WIDTH = 100;
+
+// ═══════════════════════════════════════════════════════════════
+// POLLING
+// ═══════════════════════════════════════════════════════════════
+setInterval(async () => {
+  try {
+    const res = await fetch('/data.json?t=' + Date.now());
+    if (!res.ok) return;
+    const text = await res.text();
+    if (text === lastDataHash) return;
+    lastDataHash = text;
+    const parsed = JSON.parse(text);
+    if (!parsed || !parsed.meta) return;
+    data = parsed;
+    render();
+  } catch (e) {}
+}, 500);
+
+fetch('/data.json?t=' + Date.now())
+  .then(r => r.ok ? r.text() : null)
+  .then(text => {
+    if (text) {
+      lastDataHash = text;
+      data = JSON.parse(text);
+      if (data && data.meta) render();
+    }
+  })
+  .catch(() => {});
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN RENDER
+// ═══════════════════════════════════════════════════════════════
+function render() {
+  if (!data) return;
+  hoverHintShown = false;
+  document.getElementById('empty-state').style.display = 'none';
+  computeTimeRange();
+  renderHeader();
+  renderEntityRoster();
+  renderFractures();
+  renderTrench();
+  renderCoreSample();
+}
+
+function computeTimeRange() {
+  // Prefer meta.timeRange for the focused view
+  if (data.meta && data.meta.timeRange) {
+    const tr = data.meta.timeRange;
+    const s = new Date(tr.start).getTime() / 1000;
+    const e = new Date(tr.end).getTime() / 1000;
+    if (s < e) {
+      const span = e - s;
+      minTime = s - span * 0.1;
+      maxTime = e + span * 0.1;
+      timeOrigin = minTime;
+      // Scale so the focused range fills ~80% of viewport
+      const viewWidth = document.getElementById('trench-wrap').clientWidth - TRACK_LABEL_WIDTH - 40;
+      timeScale = Math.max(viewWidth / (maxTime - minTime), 0.01);
+      return;
+    }
+  }
+  // Fallback: compute from all events
+  const events = data.events || [];
+  let earliest = Infinity, latest = -Infinity;
+  events.forEach(ev => {
+    const t = parseTimestamp(ev.timestamp);
+    if (t.start < earliest) earliest = t.start;
+    if (t.end > latest) latest = t.end;
+  });
+  if (earliest === Infinity) { earliest = Date.now() / 1000; latest = earliest + 3600; }
+  const span = latest - earliest;
+  minTime = earliest - span * 0.05;
+  maxTime = latest + span * 0.05;
+  timeOrigin = minTime;
+  const viewWidth = document.getElementById('trench-wrap').clientWidth - TRACK_LABEL_WIDTH - 40;
+  timeScale = Math.max(viewWidth / (maxTime - minTime), 0.01);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HEADER
+// ═══════════════════════════════════════════════════════════════
+function renderHeader() {
+  const m = data.meta;
+  const evtCount = (data.events || []).length;
+  const srcCount = (data.sources || []).length;
+  document.getElementById('case-info').innerHTML =
+    esc(m.title || 'Untitled Case') +
+    ' <span style="color:var(--dim);font-size:10px;margin-left:8px">' + evtCount + ' events · ' + srcCount + ' sources</span>';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ENTITY ROSTER
+// ═══════════════════════════════════════════════════════════════
+function renderEntityRoster() {
+  const entities = data.entities || [];
+  const events = data.events || [];
+  const roster = document.getElementById('entity-roster');
+  let html = '';
+  entities.forEach(ent => {
+    const count = events.filter(e => (e.entityIds || []).includes(ent.id)).length;
+    const token = ent.token || makeToken(ent.name);
+    const isHidden = hiddenEntities.has(ent.id);
+    const isHighlighted = highlightedEntityId === ent.id;
+    html += '<div class="entity-row' + (isHighlighted ? ' highlighted' : '') + '" ' +
+      'onmouseenter="highlightEntity(\'' + esc(ent.id) + '\')" onmouseleave="unhighlightEntity()">' +
+      '<button class="entity-toggle ' + (isHidden ? '' : 'on') + '" onclick="event.stopPropagation();toggleEntity(\'' + esc(ent.id) + '\')">' +
+      (isHidden ? '—' : '●') + '</button>' +
+      '<span class="entity-token">[' + esc(token) + ']</span>' +
+      '<span class="entity-name">' + esc(ent.name) + '</span>' +
+      '<span class="entity-type">' + esc(ent.type || '') + '</span>' +
+      '<span class="entity-count">' + count + '</span>' +
+      '</div>';
+  });
+  roster.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FRACTURE LEDGER
+// ═══════════════════════════════════════════════════════════════
+function renderFractures() {
+  const conflicts = data.conflicts || [];
+  const list = document.getElementById('fracture-list');
+  if (conflicts.length === 0) {
+    list.innerHTML = '<div style="font-family:var(--font-logic);font-size:10px;color:var(--ghost);padding:4px">No contradictions detected</div>';
+    return;
+  }
+  let html = '';
+  conflicts.forEach(c => {
+    html += '<div class="fracture-item" onclick="jumpToConflict(\'' + esc(c.id) + '\')">' +
+      '<span class="fracture-dot"></span>' +
+      '<span class="fracture-desc">' + esc(c.description || 'Conflict') + '</span></div>';
+  });
+  list.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TRENCH RENDERER
+// ═══════════════════════════════════════════════════════════════
+function renderTrench() {
+  const events = data.events || [];
+  const entities = data.entities || [];
+
+  // Build tracks (one per entity)
+  const trackMap = {};
+  const trackOrder = [];
+  entities.forEach(ent => {
+    if (!hiddenEntities.has(ent.id)) {
+      trackMap[ent.id] = { entity: ent, events: [] };
+      trackOrder.push(ent.id);
+    }
+  });
+
+  // Assign events to tracks
+  events.forEach(evt => {
+    (evt.entityIds || []).forEach(eid => {
+      if (trackMap[eid]) trackMap[eid].events.push(evt);
+    });
+  });
+
+  const totalWidth = Math.max(800, timeToX(maxTime) + 100);
+  const trench = document.getElementById('trench');
+  const trackContainer = document.getElementById('track-container');
+
+  // Time axis
+  renderTimeAxis(totalWidth);
+
+  // Tracks
+  let trackHtml = '';
+  trackOrder.forEach((eid, idx) => {
+    const track = trackMap[eid];
+    const token = track.entity.token || makeToken(track.entity.name);
+    trackHtml += '<div class="track" data-entity-id="' + esc(eid) + '" style="width:' + totalWidth + 'px">';
+    trackHtml += '<div class="track-label">[' + esc(token) + ']</div>';
+
+    // Render events in this track
+    track.events.forEach(evt => {
+      trackHtml += buildEventHtml(evt);
+    });
+
+    // Render gaps in this track
+    (data.gaps || []).forEach(gap => {
+      if ((gap.entityIds || []).includes(eid)) {
+        trackHtml += buildGapHtml(gap);
+      }
+    });
+
+    trackHtml += '</div>';
+  });
+
+  trackContainer.innerHTML = trackHtml;
+  trackContainer.style.width = totalWidth + 'px';
+
+  // Render conflict zones
+  renderConflictZones();
+
+  // Render causal links (Surveyor's Tape)
+  renderTape(totalWidth, trackOrder);
+}
+
+function buildEventHtml(evt) {
+  const t = parseTimestamp(evt.timestamp);
+  const x = timeToX(t.start);
+  const w = Math.max(8, timeToX(t.end) - x);
+  const sourceType = getEventSourceType(evt);
+  const conf = confidenceLevel(evt.confidence);
+  const token = getEventToken(evt);
+  const grade = evt.admiraltyGrade || '';
+
+  let cls = 'event event-' + (evt.type || 'fact');
+  if (selectedEventId === evt.id) cls += ' clicked';
+
+  let hintHtml = '';
+  if (!hoverHintShown && (conf === 'low' || conf === 'verylow')) {
+    hintHtml = '<span class="hover-hint">hover to inspect</span>';
+    hoverHintShown = true;
+  }
+
+  return '<div class="' + cls + '" ' +
+    'data-id="' + esc(evt.id) + '" ' +
+    'data-source-type="' + esc(sourceType) + '" ' +
+    'data-conf="' + conf + '" ' +
+    'style="left:' + x + 'px;width:' + w + 'px" ' +
+    'onclick="selectEvent(\'' + esc(evt.id) + '\')" ' +
+    'title="' + esc(evt.description || '') + '">' +
+    hintHtml +
+    (grade ? '<span class="adm-badge">' + esc(grade) + '</span>' : '') +
+    '<span class="evt-token">' + esc(token) + '</span>' +
+    esc(evt.shortLabel || evt.description || '') +
+    '</div>';
+}
+
+function buildGapHtml(gap) {
+  const t = parseTimestamp(gap.timestamp);
+  const x = timeToX(t.start);
+  const w = Math.max(24, timeToX(t.end) - x);
+  return '<div class="gap-marker" style="left:' + x + 'px;width:' + w + 'px" ' +
+    'title="' + esc(gap.expected || 'Missing evidence') + '" ' +
+    'onclick="showGapDetail(\'' + esc(gap.id) + '\')">' +
+    '<div class="gap-pulse"></div></div>';
+}
+
+function renderConflictZones() {
+  const conflicts = data.conflicts || [];
+  conflicts.forEach(c => {
+    const evtIds = c.eventIds || [];
+    evtIds.forEach(eid => {
+      const el = document.querySelector('.event[data-id="' + CSS.escape(eid) + '"]');
+      if (el) {
+        const overlay = document.createElement('div');
+        overlay.className = 'conflict-zone';
+        overlay.style.left = el.style.left;
+        overlay.style.width = el.style.width;
+        el.parentElement.appendChild(overlay);
+      }
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TIME AXIS
+// ═══════════════════════════════════════════════════════════════
+function renderTimeAxis(totalWidth) {
+  const axis = document.getElementById('time-axis');
+  axis.style.width = totalWidth + 'px';
+  const span = maxTime - minTime;
+  // Choose tick interval
+  let interval;
+  if (span <= 3600) interval = 300; // 5 min
+  else if (span <= 86400) interval = 3600; // 1 hour
+  else if (span <= 604800) interval = 86400; // 1 day
+  else interval = 604800; // 1 week
+
+  let html = '';
+  let t = Math.ceil(minTime / interval) * interval;
+  while (t <= maxTime) {
+    const x = timeToX(t);
+    html += '<div class="time-tick" style="left:' + x + 'px">' + formatTime(t, interval) + '</div>';
+    t += interval;
+  }
+  axis.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SURVEYOR'S TAPE
+// ═══════════════════════════════════════════════════════════════
+function renderTape(totalWidth, trackOrder) {
+  const links = data.causal_links || [];
+  if (links.length === 0) return;
+
+  const overlay = document.getElementById('tape-overlay');
+  const totalHeight = trackOrder.length * (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--track-height')) || 64) + 28;
+  overlay.setAttribute('width', totalWidth);
+  overlay.setAttribute('height', totalHeight);
+  overlay.style.width = totalWidth + 'px';
+  overlay.style.height = totalHeight + 'px';
+
+  let svg = '';
+  links.forEach(link => {
+    const fromEl = document.querySelector('.event[data-id="' + CSS.escape(link.fromEventId) + '"]');
+    const toEl = document.querySelector('.event[data-id="' + CSS.escape(link.toEventId) + '"]');
+    if (!fromEl || !toEl) return;
+
+    const fLeft = parseInt(fromEl.style.left) + parseInt(fromEl.style.width) / 2;
+    const tLeft = parseInt(toEl.style.left) + parseInt(toEl.style.width) / 2;
+    const fTop = fromEl.closest('.track') ? fromEl.closest('.track').offsetTop : 0;
+    const tTop = toEl.closest('.track') ? toEl.closest('.track').offsetTop : 0;
+
+    // Arc above the trench
+    const midX = (fLeft + tLeft) / 2;
+    const peakY = Math.min(fTop, tTop) - 20;
+    const conf = link.confidence || 0.5;
+    const slack = conf > 0.7 ? '' : ' slack';
+
+    const d = 'M ' + fLeft + ' ' + fTop + ' Q ' + midX + ' ' + peakY + ' ' + tLeft + ' ' + tTop;
+    svg += '<path class="tape-line' + slack + '" d="' + d + '" data-link-id="' + esc(link.id) + '"/>';
+  });
+  overlay.innerHTML = svg;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SPECTROMETER
+// ═══════════════════════════════════════════════════════════════
+function selectEvent(eventId) {
+  selectedEventId = eventId;
+  document.querySelectorAll('.event.clicked').forEach(el => el.classList.remove('clicked'));
+  const el = document.querySelector('.event[data-id="' + CSS.escape(eventId) + '"]');
+  if (el) el.classList.add('clicked');
+
+  const evt = (data.events || []).find(e => e.id === eventId);
+  if (!evt) return;
+
+  const spec = document.getElementById('spectrometer');
+  spec.classList.add('open');
+
+  document.getElementById('spec-title').textContent = evt.shortLabel || evt.description || 'Event';
+  const t = parseTimestamp(evt.timestamp);
+  document.getElementById('spec-time').textContent = formatTime(t.start, 1) + (t.start !== t.end ? ' — ' + formatTime(t.end, 1) : '');
+  document.getElementById('spec-desc').textContent = evt.details || evt.description || '';
+
+  // Build custody cards
+  const sources = data.sources || [];
+  const conflicts = data.conflicts || [];
+  let custodyHtml = '';
+
+  (evt.sourceIds || []).forEach(sid => {
+    const src = sources.find(s => s.id === sid);
+    if (!src) return;
+    const borderColor = sourceColor(src.type);
+    const conflictsForEvt = conflicts.filter(c => (c.eventIds || []).includes(eventId));
+
+    custodyHtml += '<div class="custody-card" style="border-left-color:' + borderColor + '">';
+    custodyHtml += '<div class="custody-header">';
+    custodyHtml += '<span class="custody-grade">' + esc(evt.admiraltyGrade || confidenceLabel(evt.confidence)) + '</span>';
+    custodyHtml += '<span class="custody-source">' + esc(src.name) + '</span>';
+    custodyHtml += '</div>';
+    custodyHtml += '<div class="custody-raw">' + esc(evt.description || '') + '</div>';
+    custodyHtml += '<div class="custody-meta">Type: ' + esc(evt.type || '') + ' · Source: ' + esc(src.type || '') + ' · Conf: ' + ((evt.confidence || 0) * 100).toFixed(0) + '%</div>';
+
+    if (conflictsForEvt.length > 0) {
+      conflictsForEvt.forEach(cf => {
+        custodyHtml += '<div class="custody-conflict">⚠ ' + esc(cf.description || 'Conflicts with other source') + '</div>';
+      });
+    }
+    custodyHtml += '</div>';
+  });
+
+  document.getElementById('spec-custody').innerHTML = custodyHtml;
+
+  // Illuminate connected tape
+  document.querySelectorAll('.tape-line').forEach(tl => tl.classList.remove('active'));
+  const links = data.causal_links || [];
+  links.forEach(link => {
+    if (link.fromEventId === eventId || link.toEventId === eventId) {
+      const tapeLine = document.querySelector('.tape-line[data-link-id="' + CSS.escape(link.id) + '"]');
+      if (tapeLine) tapeLine.classList.add('active');
+    }
+  });
+}
+
+function closeSpectrometer() {
+  document.getElementById('spectrometer').classList.remove('open');
+  selectedEventId = null;
+  document.querySelectorAll('.event.clicked').forEach(el => el.classList.remove('clicked'));
+  document.querySelectorAll('.tape-line.active').forEach(tl => tl.classList.remove('active'));
+}
+
+function showGapDetail(gapId) {
+  const gap = (data.gaps || []).find(g => g.id === gapId);
+  if (!gap) return;
+  const spec = document.getElementById('spectrometer');
+  spec.classList.add('open');
+  document.getElementById('spec-title').textContent = 'Evidence Gap';
+  const t = parseTimestamp(gap.timestamp);
+  document.getElementById('spec-time').textContent = formatTime(t.start, 1);
+  document.getElementById('spec-desc').textContent = gap.reasoning || '';
+  document.getElementById('spec-custody').innerHTML =
+    '<div class="custody-card" style="border-left-color:var(--gap-pulse)">' +
+    '<div class="custody-header"><span class="custody-grade">GAP</span><span class="custody-source">Expected Evidence</span></div>' +
+    '<div class="custody-raw">' + esc(gap.expected) + '</div></div>';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CORE SAMPLE MINIMAP
+// ═══════════════════════════════════════════════════════════════
+function renderCoreSample() {
+  const canvas = document.getElementById('core-canvas');
+  const container = document.getElementById('core-sample');
+  const rect = container.getBoundingClientRect();
+  canvas.width = rect.width * window.devicePixelRatio;
+  canvas.height = rect.height * window.devicePixelRatio;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  ctx.clearRect(0, 0, rect.width, rect.height);
+
+  const events = data.events || [];
+  const conflicts = data.conflicts || [];
+  const totalSpan = maxTime - minTime;
+  if (totalSpan <= 0) return;
+
+  // Density histogram
+  const bins = Math.min(200, Math.ceil(rect.width / 3));
+  const binWidth = rect.width / bins;
+  const binSpan = totalSpan / bins;
+  const density = new Array(bins).fill(0);
+  const conflictBins = new Array(bins).fill(false);
+
+  events.forEach(evt => {
+    const t = parseTimestamp(evt.timestamp);
+    const idx = Math.floor((t.start - minTime) / binSpan);
+    if (idx >= 0 && idx < bins) density[idx]++;
+  });
+
+  conflicts.forEach(c => {
+    (c.eventIds || []).forEach(eid => {
+      const evt = events.find(e => e.id === eid);
+      if (evt) {
+        const t = parseTimestamp(evt.timestamp);
+        const idx = Math.floor((t.start - minTime) / binSpan);
+        if (idx >= 0 && idx < bins) conflictBins[idx] = true;
+      }
+    });
+  });
+
+  const maxDensity = Math.max(1, ...density);
+  const barHeight = rect.height - 4;
+
+  // Draw density
+  density.forEach((count, i) => {
+    const h = (count / maxDensity) * barHeight;
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(i * binWidth, rect.height - 2 - h, binWidth - 1, h);
+  });
+
+  // Draw high-confidence ticks
+  events.filter(e => e.confidence >= 0.8 && e.type === 'fact').forEach(evt => {
+    const t = parseTimestamp(evt.timestamp);
+    const x = ((t.start - minTime) / totalSpan) * rect.width;
+    ctx.strokeStyle = 'rgba(0,229,255,0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, 2);
+    ctx.lineTo(x, rect.height - 2);
+    ctx.stroke();
+  });
+
+  // Draw conflict spikes
+  conflictBins.forEach((hasConflict, i) => {
+    if (hasConflict) {
+      const x = i * binWidth + binWidth / 2;
+      ctx.strokeStyle = '#FF0055';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, 2);
+      ctx.lineTo(x, rect.height - 2);
+      ctx.stroke();
+    }
+  });
+
+  updateCoreViewport();
+}
+
+function updateCoreViewport() {
+  const trenchWrap = document.getElementById('trench-wrap');
+  const trench = document.getElementById('trench');
+  if (!trench || !trenchWrap) return;
+
+  const scrollRatio = trenchWrap.scrollLeft / Math.max(trench.scrollWidth - trenchWrap.clientWidth, 1);
+  const viewRatio = trenchWrap.clientWidth / Math.max(trench.scrollWidth, 1);
+  const coreWidth = document.getElementById('core-sample').getBoundingClientRect().width;
+
+  const vp = document.getElementById('core-viewport');
+  vp.style.left = (scrollRatio * coreWidth * (1 - viewRatio)) + 'px';
+  vp.style.width = Math.max(viewRatio * coreWidth, 10) + 'px';
+}
+
+// Core sample click → scroll
+document.getElementById('core-sample').addEventListener('click', function(e) {
+  const rect = this.getBoundingClientRect();
+  const ratio = (e.clientX - rect.left) / rect.width;
+  const trenchWrap = document.getElementById('trench-wrap');
+  const trench = document.getElementById('trench');
+  trenchWrap.scrollLeft = ratio * (trench.scrollWidth - trenchWrap.clientWidth);
+});
+
+document.getElementById('trench-wrap').addEventListener('scroll', updateCoreViewport);
+
+// ═══════════════════════════════════════════════════════════════
+// ENTITY INTERACTIONS
+// ═══════════════════════════════════════════════════════════════
+function highlightEntity(entityId) {
+  highlightedEntityId = entityId;
+  document.querySelectorAll('.event').forEach(el => {
+    const evtId = el.getAttribute('data-id');
+    const evt = (data.events || []).find(e => e.id === evtId);
+    if (evt && (evt.entityIds || []).includes(entityId)) {
+      el.style.filter = 'blur(0px)';
+      el.style.opacity = '1';
+    } else {
+      el.style.opacity = '0.15';
+    }
+  });
+}
+
+function unhighlightEntity() {
+  highlightedEntityId = null;
+  document.querySelectorAll('.event').forEach(el => {
+    el.style.filter = '';
+    el.style.opacity = '';
+  });
+}
+
+function toggleEntity(entityId) {
+  if (hiddenEntities.has(entityId)) hiddenEntities.delete(entityId);
+  else hiddenEntities.add(entityId);
+  renderEntityRoster();
+  renderTrench();
+}
+
+function jumpToConflict(conflictId) {
+  const conflict = (data.conflicts || []).find(c => c.id === conflictId);
+  if (!conflict || !conflict.eventIds || conflict.eventIds.length === 0) return;
+  const evtEl = document.querySelector('.event[data-id="' + CSS.escape(conflict.eventIds[0]) + '"]');
+  if (evtEl) evtEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'center' });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UTILITY FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+function parseTimestamp(ts) {
+  if (!ts) return { start: minTime, end: minTime };
+  if (typeof ts === 'string') {
+    const d = new Date(ts).getTime() / 1000;
+    return { start: d, end: d };
+  }
+  // Fuzzy timestamp object: { earliest, latest, display, precision }
+  const start = ts.earliest ? new Date(ts.earliest).getTime() / 1000 : minTime;
+  const end = ts.latest ? new Date(ts.latest).getTime() / 1000 : start;
+  return { start, end: Math.max(end, start + 60) }; // min 1-minute width for fuzzy
+}
+
+function timeToX(unixTime) {
+  return TRACK_LABEL_WIDTH + (unixTime - minTime) * timeScale;
+}
+
+function formatTime(unixTime, interval) {
+  const d = new Date(unixTime * 1000);
+  if (interval <= 300) return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  if (interval <= 3600) return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  if (interval <= 86400) return d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function getEventSourceType(evt) {
+  const sourceIds = evt.sourceIds || [];
+  if (sourceIds.length === 0) return evt.type === 'inference' ? 'inference' : 'other';
+  const src = (data.sources || []).find(s => s.id === sourceIds[0]);
+  return src ? src.type : 'other';
+}
+
+function getEventToken(evt) {
+  const eids = evt.entityIds || [];
+  if (eids.length === 0) return '';
+  const tokens = eids.map(eid => {
+    const ent = (data.entities || []).find(e => e.id === eid);
+    return ent ? (ent.token || makeToken(ent.name)) : '';
+  }).filter(Boolean);
+  return tokens.join('→');
+}
+
+function makeToken(name) {
+  if (!name) return '???';
+  const words = name.split(/[\s-]+/);
+  if (words.length >= 3) return (words[0][0] + words[1][0] + words[2][0]).toUpperCase();
+  if (words.length === 2) return (words[0][0] + words[1][0] + (words[1][1] || '')).toUpperCase();
+  return name.substring(0, 3).toUpperCase();
+}
+
+function confidenceLevel(conf) {
+  if (conf >= 0.9) return 'veryhigh';
+  if (conf >= 0.7) return 'high';
+  if (conf >= 0.5) return 'medium';
+  if (conf >= 0.3) return 'low';
+  return 'verylow';
+}
+
+function confidenceLabel(conf) {
+  if (conf >= 0.9) return 'Confirmed';
+  if (conf >= 0.7) return 'Probable';
+  if (conf >= 0.5) return 'Possible';
+  if (conf >= 0.3) return 'Doubtful';
+  return 'Improbable';
+}
+
+function sourceColor(type) {
+  const map = {
+    system_log: '#00E5FF', forensic: '#00E5FF',
+    testimony: '#FFB300', chat: '#FFB300',
+    document: '#B388FF', email: '#B388FF', news: '#B388FF',
+    financial: '#FFD54F',
+    surveillance: '#34d399', social_media: '#34d399',
+    inference: '#E5B567'
+  };
+  return map[type] || '#7a8ba3';
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function toggleTrackMode() {
+  trackMode = trackMode === 'entity' ? 'source' : 'entity';
+  document.getElementById('track-mode-btn').textContent = trackMode === 'entity' ? 'ENTITY' : 'SOURCE';
+  if (data) renderTrench();
+}
+
+function toggleHelp() {
+  document.getElementById('help-modal').classList.toggle('visible');
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    if (document.getElementById('help-modal').classList.contains('visible')) toggleHelp();
+    else closeSpectrometer();
+  }
+});
+
+// Resize
+window.addEventListener('resize', () => {
+  if (data) { renderCoreSample(); }
+});
+</script>
+</body>
+</html>

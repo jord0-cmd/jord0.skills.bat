@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARBITER</title>
+<style>
+/* ── Reset & Theme ──────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --obsidian:#0A0D14;--surface:#0E1219;--border:#1A2030;
+  --bone:#E2DFD8;--graphite:#5C6B73;--dim:#3D4A56;
+  --ember:#FF4444;--amber:#E5A54B;--verdant:#4ADE80;
+  --cyan:#4D9FFF;--violet:#A78BFA;--frost:rgba(0,0,0,0.65);
+  --glow-ember:rgba(255,68,68,0.4);--glow-cyan:rgba(77,159,255,0.4);
+  --glow-amber:rgba(229,165,75,0.3);--glow-violet:rgba(167,139,250,0.3);
+  --font-law:'Source Serif Pro',Georgia,'Times New Roman',serif;
+  --font-logic:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'Cascadia Code','Fira Code','JetBrains Mono',monospace;
+  --manuscript-width:820px;
+  --gutter-width:260px;
+  --minimap-width:48px;
+  --scenario-width:44px;
+}
+html,body{height:100%;background:var(--obsidian);color:var(--bone);font-family:var(--font-law);font-size:17px;line-height:1.7;overflow:hidden}
+
+/* ── Scrollbars ────────────────────────────────────────────── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--obsidian)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--graphite)}
+
+/* ── Layout ────────────────────────────────────────────────── */
+#app{display:flex;flex-direction:column;height:100vh}
+
+/* ── Header ────────────────────────────────────────────────── */
+header{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface)}
+header h1{font-family:var(--font-logic);font-size:18px;letter-spacing:6px;color:var(--cyan);text-shadow:0 0 12px var(--glow-cyan);flex-shrink:0}
+#contract-info{flex:1;font-family:var(--font-logic);font-size:12px;color:var(--graphite);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#contract-info .risk-badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-left:8px}
+.risk-low{color:var(--verdant);border:1px solid rgba(74,222,128,0.3)}
+.risk-medium{color:var(--amber);border:1px solid rgba(229,165,75,0.3)}
+.risk-high{color:var(--ember);border:1px solid rgba(255,68,68,0.3)}
+.risk-critical{color:#FF2222;border:1px solid rgba(255,34,34,0.5);text-shadow:0 0 6px rgba(255,34,34,0.4)}
+#header-controls{display:flex;gap:6px;flex-shrink:0}
+#mode-btn{height:28px;padding:0 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--graphite);cursor:pointer;font-family:var(--font-logic);font-size:11px;font-weight:700;transition:all .2s;letter-spacing:2px}
+#mode-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+#mode-btn.active{color:var(--cyan);border-color:var(--cyan);text-shadow:0 0 6px var(--glow-cyan);box-shadow:0 0 8px rgba(77,159,255,0.15)}
+#filter-select{height:28px;padding:0 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--graphite);cursor:pointer;font-family:var(--font-logic);font-size:11px;outline:none}
+#filter-select:hover{border-color:var(--cyan);color:var(--bone)}
+#filter-select option{background:var(--surface);color:var(--bone)}
+#help-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--graphite);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+#help-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+
+/* ── Main Area ─────────────────────────────────────────────── */
+#main{flex:1;display:flex;min-height:0;overflow:hidden;position:relative}
+
+/* ── Scenario Gutter (Left) ────────────────────────────────── */
+#scenario-gutter{width:var(--scenario-width);flex-shrink:0;display:flex;flex-direction:column;gap:2px;padding:8px 0 8px 4px;overflow-y:auto;border-right:1px solid var(--border)}
+.scenario-tab{writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);font-family:var(--font-logic);font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--graphite);background:var(--surface);border:1px solid var(--border);border-radius:0 4px 4px 0;padding:10px 6px;cursor:pointer;transition:all .25s;white-space:nowrap}
+.scenario-tab:hover{color:var(--bone);border-color:var(--bone);background:rgba(255,255,255,0.03)}
+.scenario-tab.active{color:var(--ember);border-color:var(--ember);background:rgba(255,68,68,0.06);box-shadow:0 0 12px var(--glow-ember);text-shadow:0 0 6px var(--glow-ember)}
+
+/* ── Manuscript (Center) ───────────────────────────────────── */
+#manuscript-wrap{flex:1;overflow-y:auto;overflow-x:hidden;position:relative;scroll-behavior:smooth}
+#manuscript{max-width:var(--manuscript-width);margin:0 auto;padding:32px 40px 120px 40px;position:relative}
+
+/* ── SVG Thread Overlay ────────────────────────────────────── */
+#thread-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10}
+
+/* ── Clause Styles ─────────────────────────────────────────── */
+.clause{position:relative;padding:16px 20px 16px 24px;margin-bottom:6px;border-radius:4px;transition:all .3s ease;cursor:pointer;border-left:4px solid transparent}
+.clause:hover{background:rgba(255,255,255,0.015)}
+.clause.focused{background:rgba(77,159,255,0.04)}
+.clause-section{font-family:var(--font-logic);font-size:12px;color:var(--dim);letter-spacing:1px;margin-bottom:3px}
+.clause-title{font-family:var(--font-logic);font-size:15px;font-weight:600;color:var(--bone);margin-bottom:5px}
+.clause-text{font-size:16px;line-height:1.75;color:var(--bone);transition:filter .3s,opacity .3s}
+.clause-text.nov{font-family:var(--font-law)}
+.clause-text.pro{font-family:var(--font-logic);color:var(--cyan);font-size:15px}
+.clause-fulltext{font-family:var(--font-law);font-size:13px;color:var(--graphite);line-height:1.6;display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+
+/* ── Clause Type Visual Treatments ─────────────────────────── */
+.clause[data-risk="low"]{border-left-color:transparent}
+.clause[data-risk="medium"]{border-left-color:var(--amber);box-shadow:-2px 0 8px rgba(229,165,75,0.1)}
+.clause[data-risk="high"]{border-left-color:var(--ember);box-shadow:-2px 0 8px rgba(255,68,68,0.15)}
+.clause[data-risk="critical"]{border-left-color:#FF2222;box-shadow:-2px 0 12px rgba(255,34,34,0.25)}
+
+/* Condition precedent — gate clamp */
+.clause[data-type="condition"]{border-left:2px solid var(--violet);padding-left:24px}
+.clause[data-type="condition"]::before{content:attr(data-gate-label);font-family:var(--font-logic);font-size:9px;letter-spacing:1.5px;color:var(--violet);text-transform:uppercase;display:block;margin-bottom:4px}
+
+/* Carve-out — indented exception */
+.clause[data-subtype="carve_out"]{margin-left:15%;border-left:2px dashed var(--amber);background:rgba(229,165,75,0.02)}
+
+/* Override — frosted blackout */
+.clause[data-subtype="override"] .overridden-ref{background:var(--frost);backdrop-filter:blur(2px);border:1px solid rgba(255,255,255,0.08);padding:2px 8px;border-radius:3px;font-size:12px;color:var(--graphite);display:inline-block;margin-top:4px}
+
+/* Indemnification — heavier presence */
+.clause[data-type="indemnification"]{border-left-width:5px}
+
+/* Limitation — cap bar */
+.clause[data-type="limitation"]{position:relative}
+.clause[data-type="limitation"]::after{content:'';position:absolute;bottom:0;left:16px;right:16px;height:3px;background:var(--cyan);border-radius:2px;box-shadow:0 0 8px var(--glow-cyan)}
+
+/* Terminated — oxidized */
+.clause.terminated .clause-text{color:rgba(180,160,130,0.4);text-decoration:line-through;text-decoration-color:rgba(180,160,130,0.2)}
+
+/* ── Risk Keywords ─────────────────────────────────────────── */
+.risk-word{text-decoration:underline wavy var(--ember);text-decoration-skip-ink:none;text-underline-offset:3px}
+
+/* ── Defined Terms ─────────────────────────────────────────── */
+.defined-term{border-bottom:1px dotted var(--cyan);cursor:help;transition:color .15s}
+.defined-term:hover{color:var(--cyan)}
+
+/* ── Effort Level Badges ───────────────────────────────────── */
+.effort-badge{font-family:var(--font-logic);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:1px 6px;border-radius:8px;margin-left:6px;vertical-align:middle}
+.effort-best{color:var(--ember);border:1px solid rgba(255,68,68,0.3)}
+.effort-all_reasonable{color:var(--amber);border:1px solid rgba(229,165,75,0.3)}
+.effort-reasonable{color:var(--bone);border:1px solid var(--border)}
+.effort-commercially_reasonable{color:var(--graphite);border:1px solid var(--border)}
+
+/* ── Scholia (Expanded Analysis) ───────────────────────────── */
+.scholia{display:none;margin-top:10px;padding:16px 20px;background:rgba(77,159,255,0.03);border:1px solid rgba(77,159,255,0.1);border-radius:6px;font-family:var(--font-logic);font-size:12px;line-height:1.7;color:var(--graphite)}
+.clause.expanded .scholia{display:block;animation:scholiaReveal .3s ease}
+@keyframes scholiaReveal{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.scholia-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.scholia-section{margin-bottom:8px}
+.scholia-section h4{font-size:11px;color:var(--cyan);margin-bottom:2px;letter-spacing:0.5px}
+.scholia-section p{color:var(--graphite);font-size:12px}
+.scholia .market-tag{display:inline-block;font-size:9px;padding:1px 6px;border-radius:8px;letter-spacing:0.5px}
+.market-standard{color:var(--verdant);border:1px solid rgba(74,222,128,0.3)}
+.market-aggressive{color:var(--ember);border:1px solid rgba(255,68,68,0.3)}
+.market-favorable{color:var(--cyan);border:1px solid rgba(77,159,255,0.3)}
+.redline-suggestion{background:rgba(255,68,68,0.04);border-left:2px solid var(--ember);padding:6px 10px;margin-top:6px;font-size:11px;color:var(--bone);font-family:var(--font-law);line-height:1.5}
+
+/* ── Pleats (Folded Clauses) ───────────────────────────────── */
+.clause.pleated{height:4px;min-height:4px;overflow:hidden;padding:0 16px;margin-bottom:1px;cursor:pointer;transition:height .3s ease,padding .3s ease,opacity .3s ease;opacity:0.3;border-left-width:2px}
+.clause.pleated:hover{opacity:0.6;background:rgba(255,255,255,0.02)}
+.clause.pleated .clause-section,.clause.pleated .clause-title,.clause.pleated .clause-text,.clause.pleated .scholia,.clause.pleated .clause-fulltext{display:none}
+
+/* ── Cluster Dividers ──────────────────────────────────────── */
+.cluster-header{font-family:var(--font-logic);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);padding:32px 0 8px 20px;border-bottom:1px solid var(--border);margin-bottom:8px;cursor:pointer;user-select:none;transition:color .2s}
+.cluster-header:hover{color:var(--bone)}
+.cluster-header:first-child{padding-top:0}
+.cluster-group.collapsed .clause{display:none}
+.cluster-group.collapsed .cluster-header::after{content:' ▸';font-size:8px;color:var(--dim)}
+
+/* ── Space-Fold (Cross-Reference Summon) ───────────────────── */
+.space-fold{max-height:0;overflow:hidden;transition:max-height .4s ease;position:relative;margin:4px 0}
+.space-fold.open{max-height:500px;border:1px solid rgba(77,159,255,0.15);border-radius:6px;background:rgba(77,159,255,0.02)}
+.space-fold-content{padding:12px 16px;opacity:0;transition:opacity .3s ease .1s}
+.space-fold.open .space-fold-content{opacity:1}
+.space-fold-close{position:absolute;top:6px;right:8px;width:20px;height:20px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--graphite);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.space-fold-close:hover{border-color:var(--cyan);color:var(--cyan)}
+.space-fold-label{font-family:var(--font-logic);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--cyan);margin-bottom:6px}
+.fold-torn-edge{height:6px;background:repeating-linear-gradient(90deg,transparent,transparent 8px,var(--border) 8px,var(--border) 9px);opacity:0.3}
+
+/* ── Cascade Animation ─────────────────────────────────────── */
+.clause.cascade-hit{box-shadow:0 0 16px var(--glow-ember);border-left-color:var(--ember) !important;transition:box-shadow .15s ease}
+.clause.cascade-active{animation:cascadePulse 1s ease-in-out}
+@keyframes cascadePulse{0%{box-shadow:0 0 0 var(--glow-ember)}50%{box-shadow:0 0 24px var(--glow-ember)}100%{box-shadow:0 0 8px var(--glow-ember)}}
+.terminal-outcome{font-family:var(--font-logic);font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:8px 16px;border-radius:4px;margin:12px 0;text-align:center;animation:terminalStamp .4s ease}
+@keyframes terminalStamp{from{opacity:0;transform:scale(1.1)}to{opacity:1;transform:scale(1)}}
+.terminal-capped{color:var(--cyan);border:2px solid var(--cyan);box-shadow:0 0 16px var(--glow-cyan)}
+.terminal-uncapped{color:var(--ember);border:2px solid var(--ember);box-shadow:0 0 16px var(--glow-ember);text-shadow:0 0 8px var(--glow-ember)}
+
+/* ── Definition Tooltip ────────────────────────────────────── */
+#def-tooltip{position:fixed;max-width:360px;background:var(--surface);border:1px solid var(--cyan);border-radius:8px;padding:12px 14px;font-family:var(--font-logic);font-size:12px;line-height:1.6;color:var(--bone);box-shadow:0 4px 24px rgba(0,0,0,0.6),0 0 12px var(--glow-cyan);z-index:200;pointer-events:none;opacity:0;transition:opacity .15s;display:none}
+#def-tooltip.visible{display:block;opacity:1}
+#def-tooltip .dt-term{color:var(--cyan);font-weight:600;font-size:13px;margin-bottom:4px}
+#def-tooltip .dt-section{font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+#def-tooltip .dt-def{color:var(--graphite)}
+#def-tooltip .dt-risk{font-size:10px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)}
+
+/* ── Minimap (Right) ───────────────────────────────────────── */
+#minimap{width:var(--minimap-width);flex-shrink:0;border-left:1px solid var(--border);position:relative;cursor:pointer}
+#minimap-canvas{width:100%;height:100%;display:block}
+#minimap-viewport{position:absolute;left:2px;right:2px;border:1px solid rgba(77,159,255,0.4);border-radius:2px;background:rgba(77,159,255,0.05);pointer-events:none;transition:top .1s ease}
+
+/* ── Risk Summary Bar ──────────────────────────────────────── */
+#risk-summary{display:flex;gap:12px;padding:6px 16px;border-top:1px solid var(--border);flex-shrink:0;background:var(--surface);font-family:var(--font-logic);font-size:11px}
+.risk-count{display:flex;align-items:center;gap:4px;color:var(--graphite)}
+.risk-dot{width:8px;height:8px;border-radius:50%}
+.risk-dot.critical{background:var(--ember);box-shadow:0 0 6px var(--glow-ember)}
+.risk-dot.high{background:var(--ember)}
+.risk-dot.medium{background:var(--amber)}
+.risk-dot.low{background:var(--verdant)}
+#risk-summary .stat{margin-left:auto;color:var(--dim)}
+
+/* ── Help Modal ────────────────────────────────────────────── */
+#help-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:300;align-items:center;justify-content:center}
+#help-modal.visible{display:flex}
+#help-content{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto}
+#help-content h2{color:var(--cyan);margin-bottom:12px;font-family:var(--font-logic);font-size:16px;letter-spacing:3px}
+#help-content h3{color:var(--bone);margin:14px 0 6px;font-family:var(--font-logic);font-size:12px;letter-spacing:1px;text-transform:uppercase}
+#help-content p,#help-content li{color:var(--graphite);font-family:var(--font-logic);font-size:12px;line-height:1.7;margin-bottom:4px}
+#help-content ul{padding-left:18px}
+.help-close{margin-top:16px;text-align:right}
+.help-close button{background:none;border:1px solid var(--border);border-radius:6px;padding:6px 18px;color:var(--graphite);cursor:pointer;font-family:var(--font-logic);font-size:12px}
+.help-close button:hover{border-color:var(--cyan);color:var(--cyan)}
+
+/* ── Empty State ───────────────────────────────────────────── */
+#empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--dim);font-family:var(--font-logic);text-align:center;padding:40px}
+#empty-state h2{font-size:14px;letter-spacing:4px;color:var(--graphite);margin-bottom:12px}
+#empty-state p{font-size:12px;max-width:400px;line-height:1.7}
+
+/* ── Mobile Fallback ───────────────────────────────────────── */
+@media(max-width:1023px){
+  #scenario-gutter,#minimap{display:none}
+  #manuscript{padding:16px 20px 80px}
+  .clause[data-subtype="carve_out"]{margin-left:5%}
+  :root{--manuscript-width:100%}
+}
+
+/* ── Utility ───────────────────────────────────────────────── */
+.hidden{display:none !important}
+.fade-in{animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>ARBITER</h1>
+    <div id="contract-info">Waiting for contract analysis&hellip;</div>
+    <div id="header-controls">
+      <select id="filter-select" onchange="applyFilter(this.value)">
+        <option value="all">All Clauses</option>
+        <option value="high-risk">High Risk+</option>
+        <option value="critical">Critical Only</option>
+        <option value="obligations">Obligations</option>
+        <option value="conditions">Conditions</option>
+        <option value="indemnification">Indemnification</option>
+        <option value="termination">Termination</option>
+      </select>
+      <button id="mode-btn" onclick="toggleMode()">NOV</button>
+      <button id="help-btn" onclick="toggleHelp()">?</button>
+    </div>
+  </header>
+
+  <div id="main">
+    <div id="scenario-gutter"></div>
+
+    <div id="manuscript-wrap">
+      <div id="manuscript">
+        <svg id="thread-overlay"></svg>
+        <div id="clause-container">
+          <div id="empty-state">
+            <h2>ARBITER</h2>
+            <p>Contract Clause Flow Analyzer. Paste a contract in the terminal and the analysis will appear here. The AI writes the data, this page renders it live.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="minimap">
+      <canvas id="minimap-canvas"></canvas>
+      <div id="minimap-viewport"></div>
+    </div>
+  </div>
+
+  <div id="risk-summary">
+    <div class="risk-count"><span class="risk-dot critical"></span><span id="rc-critical">0</span> Critical</div>
+    <div class="risk-count"><span class="risk-dot high"></span><span id="rc-high">0</span> High</div>
+    <div class="risk-count"><span class="risk-dot medium"></span><span id="rc-medium">0</span> Medium</div>
+    <div class="risk-count"><span class="risk-dot low"></span><span id="rc-low">0</span> Low</div>
+    <span class="stat" id="clause-count-stat"></span>
+  </div>
+</div>
+
+<div id="def-tooltip">
+  <div class="dt-term"></div>
+  <div class="dt-section"></div>
+  <div class="dt-def"></div>
+  <div class="dt-risk"></div>
+</div>
+
+<div id="help-modal" onclick="if(event.target===this)toggleHelp()">
+  <div id="help-content">
+    <h2>ARBITER</h2>
+    <p style="color:var(--bone);font-size:13px;margin-bottom:12px">Contract Clause Flow Analyzer</p>
+    <h3>How It Works</h3>
+    <p>ARBITER is an <strong style="color:var(--bone)">AI-partnered tool</strong>. Paste a contract in the terminal. Claude analyses every clause, risk, dependency, and scenario &mdash; then renders it here as a living manuscript.</p>
+    <h3>Reading the Manuscript</h3>
+    <ul>
+      <li><strong style="color:var(--ember)">Red margin bars</strong> &mdash; high/critical risk clauses</li>
+      <li><strong style="color:var(--amber)">Amber margin bars</strong> &mdash; medium risk, attention needed</li>
+      <li><strong style="color:var(--cyan)">Dotted underlines</strong> &mdash; defined terms (hover to see definition)</li>
+      <li><strong style="color:var(--violet)">Purple borders</strong> &mdash; condition gates (if/then logic)</li>
+      <li><strong style="color:var(--ember)">Wavy red underlines</strong> &mdash; dangerous keywords</li>
+    </ul>
+    <h3>Interactions</h3>
+    <ul>
+      <li><strong style="color:var(--bone)">Click a clause</strong> &mdash; expand analysis (risk rationale, market comparison, redline suggestion)</li>
+      <li><strong style="color:var(--bone)">Click scenario tabs</strong> (left edge) &mdash; simulate breach cascades</li>
+      <li><strong style="color:var(--bone)">NOV/PRO toggle</strong> &mdash; switch between plain English and legal text</li>
+      <li><strong style="color:var(--bone)">Filter menu</strong> &mdash; show only specific clause types or risk levels</li>
+      <li><strong style="color:var(--bone)">Minimap</strong> (right edge) &mdash; click to navigate by risk topography</li>
+    </ul>
+    <h3>Live Updates</h3>
+    <p>Ask the AI to elaborate on a clause, add a scenario, or re-analyse with a different perspective. The manuscript <strong style="color:var(--bone)">morphs automatically</strong> &mdash; no refresh needed.</p>
+    <p style="margin-top:14px;color:var(--cyan);font-style:italic;font-family:var(--font-law)">&ldquo;The document is the territory.&rdquo;</p>
+    <div class="help-close"><button onclick="toggleHelp()">Got it</button></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let data = null;
+let lastDataHash = '';
+let mode = 'nov'; // 'nov' (plain English) or 'pro' (legal)
+let focusedClauseId = null;
+let expandedClauseId = null;
+let activeScenarioId = null;
+let activeFilter = 'all';
+let openSpaceFolds = new Set();
+let cascadeTimer = null;
+
+// DOM refs
+const manuscriptWrap = document.getElementById('manuscript-wrap');
+const clauseContainer = document.getElementById('clause-container');
+const threadOverlay = document.getElementById('thread-overlay');
+const scenarioGutter = document.getElementById('scenario-gutter');
+const defTooltip = document.getElementById('def-tooltip');
+const minimapCanvas = document.getElementById('minimap-canvas');
+const minimapViewport = document.getElementById('minimap-viewport');
+
+// ═══════════════════════════════════════════════════════════════
+// POLLING ENGINE
+// ═══════════════════════════════════════════════════════════════
+setInterval(async () => {
+  try {
+    const res = await fetch('/data.json?t=' + Date.now());
+    if (!res.ok) return;
+    const text = await res.text();
+    if (text === lastDataHash) return;
+    lastDataHash = text;
+    const parsed = JSON.parse(text);
+    if (!parsed || !parsed.meta) return;
+    data = parsed;
+    render();
+  } catch (e) {
+    // Silently retry on next poll
+  }
+}, 500);
+
+// Initial load attempt
+fetch('/data.json?t=' + Date.now())
+  .then(r => r.ok ? r.text() : null)
+  .then(text => {
+    if (text) {
+      lastDataHash = text;
+      data = JSON.parse(text);
+      if (data && data.meta) render();
+    }
+  })
+  .catch(() => {});
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN RENDER
+// ═══════════════════════════════════════════════════════════════
+function render() {
+  renderHeader();
+  renderScenarios();
+  renderClauses();
+  renderRiskSummary();
+  updateMinimap();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HEADER
+// ═══════════════════════════════════════════════════════════════
+function renderHeader() {
+  const m = data.meta;
+  const riskClass = 'risk-' + (m.overallRisk || 'medium');
+  document.getElementById('contract-info').innerHTML =
+    escHtml(m.title || 'Untitled Contract') +
+    ' <span class="risk-badge ' + riskClass + '">' + escHtml(m.overallRisk || '') + '</span>' +
+    (m.perspective ? ' <span style="color:var(--dim);font-size:10px;margin-left:8px">Perspective: ' + escHtml(m.perspective) + '</span>' : '') +
+    (m.clauseCount ? ' <span style="color:var(--dim);font-size:10px;margin-left:8px">' + m.clauseCount + ' clauses</span>' : '');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCENARIO TABS
+// ═══════════════════════════════════════════════════════════════
+function renderScenarios() {
+  const scenarios = data.scenarios || [];
+  scenarioGutter.innerHTML = '';
+  scenarios.forEach(s => {
+    const tab = document.createElement('div');
+    tab.className = 'scenario-tab' + (activeScenarioId === s.id ? ' active' : '');
+    tab.textContent = s.title;
+    tab.title = s.description || s.title;
+    tab.onclick = () => triggerScenario(s.id);
+    scenarioGutter.appendChild(tab);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CLAUSE RENDERER
+// ═══════════════════════════════════════════════════════════════
+function renderClauses() {
+  const clauses = data.clauses || [];
+  if (clauses.length === 0) {
+    clauseContainer.innerHTML = '<div id="empty-state"><h2>ARBITER</h2><p>No clauses found in the analysis. Check the terminal for status.</p></div>';
+    return;
+  }
+
+  // Group by cluster
+  const clusters = {};
+  const clusterOrder = [];
+  clauses.forEach(c => {
+    const cluster = c.cluster || 'general';
+    if (!clusters[cluster]) {
+      clusters[cluster] = [];
+      clusterOrder.push(cluster);
+    }
+    clusters[cluster].push(c);
+  });
+
+  let html = '';
+  clusterOrder.forEach(clusterName => {
+    html += '<div class="cluster-group" data-cluster="' + escAttr(clusterName) + '">';
+    html += '<div class="cluster-header" onclick="toggleCluster(this)">' + formatClusterName(clusterName) + '</div>';
+    clusters[clusterName].forEach(c => {
+      html += buildClauseHtml(c);
+    });
+    html += '</div>';
+  });
+
+  clauseContainer.innerHTML = html;
+  applyFilter(activeFilter);
+  if (focusedClauseId) highlightClause(focusedClauseId);
+  clearThreads();
+}
+
+function buildClauseHtml(c) {
+  const isExpanded = expandedClauseId === c.id;
+  const isPleated = shouldPleat(c);
+  const textContent = mode === 'nov' ? (c.plain || c.dev || '') : (c.dev || c.plain || '');
+  const textClass = mode === 'nov' ? 'nov' : 'pro';
+  const gateLabel = c.nodeType === 'decision' || c.type === 'condition'
+    ? (c.branches && c.branches.length ? 'GATE: ' + c.branches.length + ' PATHS' : 'CONDITIONAL')
+    : '';
+
+  let classes = 'clause' + (isExpanded ? ' expanded' : '') + (isPleated ? ' pleated' : '');
+  let attrs = ' data-id="' + escAttr(c.id) + '"' +
+    ' data-risk="' + escAttr(c.risk || 'low') + '"' +
+    ' data-type="' + escAttr(c.type || '') + '"' +
+    ' data-subtype="' + escAttr(c.subType || '') + '"' +
+    ' data-cluster="' + escAttr(c.cluster || '') + '"' +
+    ' data-nodetype="' + escAttr(c.nodeType || '') + '"';
+
+  if (gateLabel) attrs += ' data-gate-label="' + escAttr(gateLabel) + '"';
+
+  let html = '<div class="' + classes + '"' + attrs + ' onclick="onClauseClick(\'' + escAttr(c.id) + '\')" onmouseenter="onClauseEnter(\'' + escAttr(c.id) + '\')" onmouseleave="onClauseLeave()">';
+
+  // Section number
+  html += '<div class="clause-section">§ ' + escHtml(c.section || '') + '</div>';
+
+  // Title with effort badge
+  html += '<div class="clause-title">' + escHtml(c.title || '');
+  if (c.effortLevel) {
+    html += ' <span class="effort-badge effort-' + escAttr(c.effortLevel) + '">' + formatEffort(c.effortLevel) + '</span>';
+  }
+  html += '</div>';
+
+  // Main text with defined terms highlighted
+  html += '<div class="clause-text ' + textClass + '">' + renderTextWithTerms(textContent) + '</div>';
+
+  // Full text (hidden by default, shown on expand)
+  if (c.fullText) {
+    html += '<div class="clause-fulltext">' + escHtml(c.fullText) + '</div>';
+  }
+
+  // Override reference
+  if (c.subType === 'override' && c.overrides) {
+    html += '<div class="overridden-ref">Overrides: ' + escHtml(c.overrides) + '</div>';
+  }
+
+  // Branches for decision nodes
+  if (c.branches && c.branches.length > 0) {
+    html += '<div class="branches-display" style="margin-top:8px">';
+    c.branches.forEach(b => {
+      const outcomeColor = b.outcome === 'favorable' ? 'var(--verdant)' : b.outcome === 'adverse' ? 'var(--ember)' : 'var(--amber)';
+      html += '<div style="font-family:var(--font-logic);font-size:11px;color:' + outcomeColor + ';padding:2px 0">→ ' + escHtml(b.condition) + '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Scholia (expanded analysis)
+  html += buildScholiaHtml(c);
+
+  html += '</div>';
+  return html;
+}
+
+function buildScholiaHtml(c) {
+  let html = '<div class="scholia">';
+  html += '<div class="scholia-label">Analysis</div>';
+
+  // Risk rationale
+  if (c.riskRationale) {
+    html += '<div class="scholia-section"><h4>Risk Assessment</h4><p>' + escHtml(c.riskRationale) + '</p></div>';
+  }
+
+  // Find associated risks
+  const clauseRisks = (data.risks || []).filter(r => r.clauseIds && r.clauseIds.includes(c.id));
+  clauseRisks.forEach(r => {
+    html += '<div class="scholia-section">';
+    html += '<h4 style="color:var(--ember)">' + escHtml(r.title) + ' <span class="market-tag market-aggressive">' + escHtml(r.severity) + '</span></h4>';
+    const riskText = mode === 'nov' ? (r.plain || r.dev || '') : (r.dev || r.plain || '');
+    html += '<p>' + escHtml(riskText) + '</p>';
+    if (r.marketComparison) {
+      html += '<p style="color:var(--dim);font-size:11px;margin-top:4px"><strong style="color:var(--graphite)">Market:</strong> ' + escHtml(r.marketComparison) + '</p>';
+    }
+    if (r.suggestedRedline) {
+      html += '<div class="redline-suggestion">' + escHtml(r.suggestedRedline) + '</div>';
+    }
+    if (r.negotiability) {
+      html += '<p style="font-size:10px;margin-top:4px;color:var(--dim)">Negotiability: <strong style="color:var(--bone)">' + escHtml(r.negotiability) + '</strong>';
+      if (r.negotiabilityRationale) html += ' — ' + escHtml(r.negotiabilityRationale);
+      html += '</p>';
+    }
+    html += '</div>';
+  });
+
+  // Temporal info
+  if (c.temporal) {
+    const t = c.temporal;
+    let temporal = '';
+    if (t.activates) temporal += 'Activates: ' + t.activates;
+    if (t.expires) temporal += (temporal ? ' · ' : '') + 'Expires: ' + t.expires;
+    if (t.survives) temporal += (temporal ? ' · ' : '') + 'Survives termination';
+    if (temporal) {
+      html += '<div class="scholia-section"><h4>Temporal Scope</h4><p>' + escHtml(temporal) + '</p></div>';
+    }
+  }
+
+  // Connected edges
+  const connectedEdges = (data.edges || []).filter(e => e.source === c.id || e.target === c.id);
+  if (connectedEdges.length > 0) {
+    html += '<div class="scholia-section"><h4>Cross-References (' + connectedEdges.length + ')</h4>';
+    connectedEdges.forEach(e => {
+      const dir = e.source === c.id ? '→' : '←';
+      const otherId = e.source === c.id ? e.target : e.source;
+      const otherClause = (data.clauses || []).find(x => x.id === otherId);
+      const otherLabel = otherClause ? '§' + otherClause.section + ' ' + otherClause.title : otherId;
+      const typeColor = edgeTypeColor(e.type);
+      html += '<p style="font-size:11px">' + dir + ' <span style="color:' + typeColor + '">[' + escHtml(e.type) + ']</span> ' + escHtml(otherLabel);
+      if (e.label) html += ' <span style="color:var(--dim)">— ' + escHtml(e.label) + '</span>';
+      html += '</p>';
+    });
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TEXT RENDERING WITH DEFINED TERMS
+// ═══════════════════════════════════════════════════════════════
+function renderTextWithTerms(text) {
+  if (!text || !data.definedTerms || data.definedTerms.length === 0) return escHtml(text);
+
+  // Build regex from defined terms, longest first to avoid partial matches
+  const terms = data.definedTerms
+    .map(dt => dt.term)
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length);
+
+  if (terms.length === 0) return escHtml(text);
+
+  const escaped = terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const re = new RegExp('\\b(' + escaped.join('|') + ')\\b', 'g');
+
+  let result = '';
+  let last = 0;
+  let match;
+  while ((match = re.exec(text)) !== null) {
+    result += escHtml(text.slice(last, match.index));
+    const dt = data.definedTerms.find(d => d.term === match[1]);
+    const dtId = dt ? dt.id : '';
+    result += '<span class="defined-term" data-dt-id="' + escAttr(dtId) + '" onmouseenter="showDef(this,\'' + escAttr(dtId) + '\')" onmouseleave="hideDef()">' + escHtml(match[1]) + '</span>';
+    last = match.index + match[0].length;
+  }
+  result += escHtml(text.slice(last));
+
+  // Highlight risk words
+  const riskWords = ['unlimited', 'uncapped', 'survives indefinitely', 'irrevocable', 'sole discretion', 'without limitation', 'notwithstanding', 'in perpetuity', 'waives'];
+  riskWords.forEach(word => {
+    const wRe = new RegExp('(' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    result = result.replace(wRe, '<span class="risk-word">$1</span>');
+  });
+
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DEFINED TERM TOOLTIP
+// ═══════════════════════════════════════════════════════════════
+function showDef(el, dtId) {
+  const dt = (data.definedTerms || []).find(d => d.id === dtId);
+  if (!dt) return;
+
+  const rect = el.getBoundingClientRect();
+  defTooltip.querySelector('.dt-term').textContent = dt.term;
+  defTooltip.querySelector('.dt-section').textContent = dt.section ? '§ ' + dt.section : '';
+  defTooltip.querySelector('.dt-def').textContent = dt.definition || '';
+  const riskEl = defTooltip.querySelector('.dt-risk');
+  if (dt.risk && dt.riskRationale) {
+    riskEl.innerHTML = '<span style="color:' + riskColor(dt.risk) + '">' + escHtml(dt.risk) + '</span>: ' + escHtml(dt.riskRationale);
+    riskEl.style.display = '';
+  } else {
+    riskEl.style.display = 'none';
+  }
+
+  // Position tooltip near the term
+  const x = Math.min(rect.left, window.innerWidth - 380);
+  const y = rect.bottom + 8;
+  defTooltip.style.left = x + 'px';
+  defTooltip.style.top = (y + window.scrollY > window.innerHeight - 200 ? rect.top - defTooltip.offsetHeight - 8 : y) + 'px';
+  defTooltip.classList.add('visible');
+}
+
+function hideDef() {
+  defTooltip.classList.remove('visible');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CLAUSE INTERACTIONS
+// ═══════════════════════════════════════════════════════════════
+function onClauseClick(id) {
+  if (expandedClauseId === id) {
+    expandedClauseId = null;
+  } else {
+    expandedClauseId = id;
+  }
+  const els = clauseContainer.querySelectorAll('.clause');
+  els.forEach(el => {
+    const elId = el.getAttribute('data-id');
+    if (elId === expandedClauseId) {
+      el.classList.add('expanded');
+      // Show full text
+      const ft = el.querySelector('.clause-fulltext');
+      if (ft && mode === 'pro') ft.style.display = 'block';
+    } else {
+      el.classList.remove('expanded');
+      const ft = el.querySelector('.clause-fulltext');
+      if (ft) ft.style.display = 'none';
+    }
+  });
+}
+
+function onClauseEnter(id) {
+  focusedClauseId = id;
+  highlightClause(id);
+  drawThreadsForClause(id);
+}
+
+function onClauseLeave() {
+  focusedClauseId = null;
+  unhighlightAll();
+  clearThreads();
+}
+
+function highlightClause(id) {
+  clauseContainer.querySelectorAll('.clause').forEach(el => {
+    if (el.getAttribute('data-id') === id) {
+      el.classList.add('focused');
+    }
+  });
+}
+
+function unhighlightAll() {
+  clauseContainer.querySelectorAll('.clause.focused').forEach(el => el.classList.remove('focused'));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SVG THREAD RENDERER
+// ═══════════════════════════════════════════════════════════════
+function clearThreads() {
+  threadOverlay.innerHTML = '';
+  threadOverlay.setAttribute('width', 0);
+  threadOverlay.setAttribute('height', 0);
+}
+
+function drawThreadsForClause(clauseId) {
+  const edges = (data.edges || []).filter(e => e.source === clauseId || e.target === clauseId);
+  if (edges.length === 0) return;
+
+  // Size SVG to manuscript
+  const manuscript = document.getElementById('manuscript');
+  const mRect = manuscript.getBoundingClientRect();
+  threadOverlay.setAttribute('width', mRect.width);
+  threadOverlay.setAttribute('height', manuscript.scrollHeight);
+  threadOverlay.style.width = mRect.width + 'px';
+  threadOverlay.style.height = manuscript.scrollHeight + 'px';
+
+  // Create defs for glow filters
+  let svg = '<defs>';
+  svg += '<filter id="thread-glow"><feGaussianBlur stdDeviation="3" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+  svg += '<filter id="thread-glow-strong"><feGaussianBlur stdDeviation="5" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+  svg += '</defs>';
+
+  edges.forEach(e => {
+    const sourceEl = clauseContainer.querySelector('.clause[data-id="' + CSS.escape(e.source) + '"]');
+    const targetEl = clauseContainer.querySelector('.clause[data-id="' + CSS.escape(e.target) + '"]');
+    if (!sourceEl || !targetEl) return;
+
+    const sRect = sourceEl.getBoundingClientRect();
+    const tRect = targetEl.getBoundingClientRect();
+    const mTop = mRect.top;
+
+    // Calculate positions relative to manuscript
+    const sx = sRect.right - mRect.left + 10;
+    const sy = sRect.top - mTop + sRect.height / 2 + manuscriptWrap.scrollTop;
+    const tx = tRect.right - mRect.left + 10;
+    const ty = tRect.top - mTop + tRect.height / 2 + manuscriptWrap.scrollTop;
+
+    // Cubic bezier through right gutter
+    const gutterX = Math.max(sx, tx) + 40;
+    const d = 'M ' + sx + ' ' + sy + ' C ' + gutterX + ' ' + sy + ', ' + gutterX + ' ' + ty + ', ' + tx + ' ' + ty;
+
+    const color = edgeTypeColor(e.type);
+    const width = e.strength === 'strong' ? 2 : e.strength === 'moderate' ? 1.5 : 1;
+    const dash = (e.type === 'overrides' || e.type === 'qualifies') ? 'stroke-dasharray="6 4"' : '';
+    const filter = (e.type === 'triggers' || e.type === 'overrides') ? 'filter="url(#thread-glow)"' : '';
+
+    svg += '<path d="' + d + '" stroke="' + color + '" stroke-width="' + width + '" fill="none" opacity="0.7" ' + dash + ' ' + filter + '/>';
+
+    // Arrow at target
+    const arrowSize = 6;
+    svg += '<circle cx="' + tx + '" cy="' + ty + '" r="' + arrowSize + '" fill="' + color + '" opacity="0.5"/>';
+  });
+
+  threadOverlay.innerHTML = svg;
+}
+
+function edgeTypeColor(type) {
+  const colors = {
+    depends_on: '#5C6B73',
+    triggers: '#FF4444',
+    overrides: '#FF4444',
+    carves_out: '#E5A54B',
+    defines: '#4D9FFF',
+    references: '#5C6B73',
+    qualifies: '#E5A54B',
+    incorporates: '#4D9FFF'
+  };
+  return colors[type] || '#5C6B73';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BREACH CASCADE ENGINE
+// ═══════════════════════════════════════════════════════════════
+function triggerScenario(scenarioId) {
+  // Clear any running cascade
+  if (cascadeTimer) {
+    clearTimeout(cascadeTimer);
+    cascadeTimer = null;
+    clauseContainer.querySelectorAll('.cascade-hit,.cascade-active').forEach(el => {
+      el.classList.remove('cascade-hit', 'cascade-active');
+    });
+    clauseContainer.querySelectorAll('.terminal-outcome').forEach(el => el.remove());
+  }
+
+  // Toggle scenario
+  if (activeScenarioId === scenarioId) {
+    activeScenarioId = null;
+    clearCascadeVisuals();
+    renderScenarios();
+    return;
+  }
+
+  activeScenarioId = scenarioId;
+  renderScenarios();
+
+  const scenario = (data.scenarios || []).find(s => s.id === scenarioId);
+  if (!scenario || !scenario.cascadePath || scenario.cascadePath.length === 0) return;
+
+  // Dim non-cascade clauses
+  clauseContainer.querySelectorAll('.clause').forEach(el => {
+    if (!scenario.cascadePath.includes(el.getAttribute('data-id'))) {
+      el.style.opacity = '0.25';
+    } else {
+      el.style.opacity = '1';
+    }
+  });
+
+  // Animate cascade path step by step
+  animateCascade(scenario, 0);
+}
+
+function animateCascade(scenario, step) {
+  if (step >= scenario.cascadePath.length) {
+    // Show terminal outcome
+    showTerminalOutcome(scenario);
+    return;
+  }
+
+  const clauseId = scenario.cascadePath[step];
+  const el = clauseContainer.querySelector('.clause[data-id="' + CSS.escape(clauseId) + '"]');
+  if (el) {
+    el.classList.add('cascade-hit', 'cascade-active');
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Draw cascade thread to next clause
+    if (step < scenario.cascadePath.length - 1) {
+      drawCascadeThread(clauseId, scenario.cascadePath[step + 1]);
+    }
+  }
+
+  // Determine pause duration (longer at decision nodes)
+  const clause = (data.clauses || []).find(c => c.id === clauseId);
+  const delay = (clause && clause.nodeType === 'decision') ? 700 : 350;
+
+  cascadeTimer = setTimeout(() => animateCascade(scenario, step + 1), delay);
+}
+
+function drawCascadeThread(fromId, toId) {
+  const fromEl = clauseContainer.querySelector('.clause[data-id="' + CSS.escape(fromId) + '"]');
+  const toEl = clauseContainer.querySelector('.clause[data-id="' + CSS.escape(toId) + '"]');
+  if (!fromEl || !toEl) return;
+
+  const manuscript = document.getElementById('manuscript');
+  const mRect = manuscript.getBoundingClientRect();
+  const fRect = fromEl.getBoundingClientRect();
+  const tRect = toEl.getBoundingClientRect();
+
+  // Ensure SVG is sized
+  threadOverlay.setAttribute('width', mRect.width);
+  threadOverlay.setAttribute('height', manuscript.scrollHeight);
+  threadOverlay.style.width = mRect.width + 'px';
+  threadOverlay.style.height = manuscript.scrollHeight + 'px';
+
+  const sx = fRect.left - mRect.left + 10;
+  const sy = fRect.bottom - mRect.top + manuscriptWrap.scrollTop;
+  const tx = tRect.left - mRect.left + 10;
+  const ty = tRect.top - mRect.top + manuscriptWrap.scrollTop;
+
+  const midY = (sy + ty) / 2;
+  const d = 'M ' + sx + ' ' + sy + ' C ' + sx + ' ' + midY + ', ' + tx + ' ' + midY + ', ' + tx + ' ' + ty;
+
+  // Animated stroke-dashoffset for "drawing" effect
+  const pathLen = Math.abs(ty - sy) * 1.5;
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', d);
+  path.setAttribute('stroke', '#FF4444');
+  path.setAttribute('stroke-width', '3');
+  path.setAttribute('fill', 'none');
+  path.setAttribute('filter', 'url(#thread-glow-strong)');
+  path.setAttribute('stroke-dasharray', pathLen);
+  path.setAttribute('stroke-dashoffset', pathLen);
+  path.style.transition = 'stroke-dashoffset 0.3s ease-in-out';
+
+  // Ensure defs exist
+  if (!threadOverlay.querySelector('defs')) {
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    defs.innerHTML = '<filter id="thread-glow-strong"><feGaussianBlur stdDeviation="5" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+    threadOverlay.prepend(defs);
+  }
+
+  threadOverlay.appendChild(path);
+  requestAnimationFrame(() => {
+    path.setAttribute('stroke-dashoffset', '0');
+  });
+}
+
+function showTerminalOutcome(scenario) {
+  const lastId = scenario.cascadePath[scenario.cascadePath.length - 1];
+  const el = clauseContainer.querySelector('.clause[data-id="' + CSS.escape(lastId) + '"]');
+  if (!el) return;
+
+  const outcomeDiv = document.createElement('div');
+  const isUncapped = (scenario.outcome || '').toLowerCase().includes('uncapped') ||
+                     (scenario.financialImpact || '').toLowerCase().includes('uncapped') ||
+                     (scenario.financialImpact || '').toLowerCase().includes('infinite');
+  outcomeDiv.className = 'terminal-outcome ' + (isUncapped ? 'terminal-uncapped' : 'terminal-capped');
+
+  let label = '';
+  if (scenario.financialImpact) {
+    label = scenario.financialImpact;
+  } else if (isUncapped) {
+    label = 'EXPOSURE: UNCAPPED';
+  } else {
+    label = scenario.outcome || 'Cascade complete';
+  }
+  outcomeDiv.textContent = label;
+  el.parentNode.insertBefore(outcomeDiv, el.nextSibling);
+}
+
+function clearCascadeVisuals() {
+  clauseContainer.querySelectorAll('.cascade-hit,.cascade-active').forEach(el => {
+    el.classList.remove('cascade-hit', 'cascade-active');
+  });
+  clauseContainer.querySelectorAll('.clause').forEach(el => {
+    el.style.opacity = '';
+  });
+  clauseContainer.querySelectorAll('.terminal-outcome').forEach(el => el.remove());
+  clearThreads();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NOV/PRO MODE TOGGLE
+// ═══════════════════════════════════════════════════════════════
+function toggleMode() {
+  mode = mode === 'nov' ? 'pro' : 'nov';
+  const btn = document.getElementById('mode-btn');
+  btn.textContent = mode === 'nov' ? 'NOV' : 'PRO';
+  btn.classList.toggle('active', mode === 'pro');
+
+  // Re-render clause text without full re-render
+  clauseContainer.querySelectorAll('.clause').forEach(el => {
+    const id = el.getAttribute('data-id');
+    const clause = (data.clauses || []).find(c => c.id === id);
+    if (!clause) return;
+
+    const textEl = el.querySelector('.clause-text');
+    if (textEl) {
+      const text = mode === 'nov' ? (clause.plain || clause.dev || '') : (clause.dev || clause.plain || '');
+      textEl.innerHTML = renderTextWithTerms(text);
+      textEl.className = 'clause-text ' + (mode === 'nov' ? 'nov' : 'pro');
+    }
+
+    // Toggle full text visibility when expanded
+    const ft = el.querySelector('.clause-fulltext');
+    if (ft) {
+      ft.style.display = (mode === 'pro' && el.classList.contains('expanded')) ? 'block' : 'none';
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FILTER ENGINE
+// ═══════════════════════════════════════════════════════════════
+function applyFilter(filterValue) {
+  activeFilter = filterValue;
+  document.getElementById('filter-select').value = filterValue;
+
+  clauseContainer.querySelectorAll('.clause').forEach(el => {
+    const risk = el.getAttribute('data-risk');
+    const type = el.getAttribute('data-type');
+    let show = true;
+
+    switch (filterValue) {
+      case 'high-risk':
+        show = risk === 'high' || risk === 'critical';
+        break;
+      case 'critical':
+        show = risk === 'critical';
+        break;
+      case 'obligations':
+        show = type === 'obligation' || type === 'covenant';
+        break;
+      case 'conditions':
+        show = type === 'condition';
+        break;
+      case 'indemnification':
+        show = type === 'indemnification' || type === 'limitation';
+        break;
+      case 'termination':
+        show = type === 'termination';
+        break;
+      default:
+        show = true;
+    }
+
+    if (show) {
+      el.classList.remove('pleated');
+    } else {
+      el.classList.add('pleated');
+    }
+  });
+
+  updateMinimap();
+}
+
+function shouldPleat(clause) {
+  if (activeFilter === 'all') return false;
+  const risk = clause.risk || 'low';
+  const type = clause.type || '';
+
+  switch (activeFilter) {
+    case 'high-risk': return risk !== 'high' && risk !== 'critical';
+    case 'critical': return risk !== 'critical';
+    case 'obligations': return type !== 'obligation' && type !== 'covenant';
+    case 'conditions': return type !== 'condition';
+    case 'indemnification': return type !== 'indemnification' && type !== 'limitation';
+    case 'termination': return type !== 'termination';
+    default: return false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MINIMAP — GRAVITY WELLS
+// ═══════════════════════════════════════════════════════════════
+function updateMinimap() {
+  const canvas = minimapCanvas;
+  const container = document.getElementById('minimap');
+  if (!container || !canvas) return;
+
+  const containerRect = container.getBoundingClientRect();
+  canvas.width = containerRect.width * window.devicePixelRatio;
+  canvas.height = containerRect.height * window.devicePixelRatio;
+  canvas.style.width = containerRect.width + 'px';
+  canvas.style.height = containerRect.height + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  ctx.clearRect(0, 0, containerRect.width, containerRect.height);
+
+  const clauses = data ? (data.clauses || []) : [];
+  if (clauses.length === 0) return;
+
+  const visibleClauses = clauses.filter(c => !shouldPleat(c));
+  const totalHeight = containerRect.height;
+  const sliceH = Math.max(2, totalHeight / Math.max(visibleClauses.length, 1));
+  const midX = containerRect.width / 2;
+
+  visibleClauses.forEach((c, i) => {
+    const y = i * sliceH;
+    const weight = riskWeight(c.risk);
+
+    // Gravity well: wider = more risk
+    const wellWidth = 2 + weight * (midX - 4);
+    const x1 = midX - wellWidth / 2;
+    const x2 = midX + wellWidth / 2;
+
+    const color = riskColor(c.risk);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.15 + weight * 0.5;
+    ctx.fillRect(x1, y, x2 - x1, Math.max(sliceH - 1, 1));
+
+    // Core line
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.4 + weight * 0.6;
+    ctx.fillRect(midX - 1, y, 2, Math.max(sliceH - 1, 1));
+  });
+
+  ctx.globalAlpha = 1;
+
+  // Update viewport indicator
+  updateMinimapViewport();
+}
+
+function updateMinimapViewport() {
+  const wrap = manuscriptWrap;
+  const ms = document.getElementById('manuscript');
+  if (!wrap || !ms) return;
+
+  const scrollRatio = wrap.scrollTop / Math.max(ms.scrollHeight - wrap.clientHeight, 1);
+  const viewRatio = wrap.clientHeight / Math.max(ms.scrollHeight, 1);
+  const containerHeight = minimapCanvas.parentElement.getBoundingClientRect().height;
+
+  minimapViewport.style.top = (scrollRatio * containerHeight) + 'px';
+  minimapViewport.style.height = Math.max(viewRatio * containerHeight, 10) + 'px';
+}
+
+// Minimap click → scroll
+document.getElementById('minimap').addEventListener('click', function(e) {
+  const rect = this.getBoundingClientRect();
+  const ratio = (e.clientY - rect.top) / rect.height;
+  const ms = document.getElementById('manuscript');
+  const maxScroll = ms.scrollHeight - manuscriptWrap.clientHeight;
+  manuscriptWrap.scrollTop = ratio * maxScroll;
+});
+
+// Update viewport on scroll
+manuscriptWrap.addEventListener('scroll', updateMinimapViewport);
+
+// ═══════════════════════════════════════════════════════════════
+// RISK SUMMARY
+// ═══════════════════════════════════════════════════════════════
+function renderRiskSummary() {
+  const clauses = data.clauses || [];
+  const counts = { critical: 0, high: 0, medium: 0, low: 0 };
+  clauses.forEach(c => {
+    const r = c.risk || 'low';
+    if (counts[r] !== undefined) counts[r]++;
+  });
+  document.getElementById('rc-critical').textContent = counts.critical;
+  document.getElementById('rc-high').textContent = counts.high;
+  document.getElementById('rc-medium').textContent = counts.medium;
+  document.getElementById('rc-low').textContent = counts.low;
+  document.getElementById('clause-count-stat').textContent =
+    clauses.length + ' clauses · ' + (data.edges || []).length + ' cross-refs';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CLUSTER TOGGLE
+// ═══════════════════════════════════════════════════════════════
+function toggleCluster(headerEl) {
+  const group = headerEl.parentElement;
+  group.classList.toggle('collapsed');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELP MODAL
+// ═══════════════════════════════════════════════════════════════
+function toggleHelp() {
+  document.getElementById('help-modal').classList.toggle('visible');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UTILITY FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escAttr(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function riskWeight(risk) {
+  return { critical: 1, high: 0.75, medium: 0.4, low: 0.1 }[risk] || 0.1;
+}
+
+function riskColor(risk) {
+  return { critical: '#FF2222', high: '#FF4444', medium: '#E5A54B', low: '#4ADE80' }[risk] || '#5C6B73';
+}
+
+function formatClusterName(name) {
+  return name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function formatEffort(level) {
+  return {
+    best: 'Best Efforts',
+    all_reasonable: 'All Reasonable',
+    reasonable: 'Reasonable',
+    commercially_reasonable: 'Commercially Reasonable'
+  }[level] || level;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('keydown', function(e) {
+  // Escape: close modal, clear cascade, deselect
+  if (e.key === 'Escape') {
+    if (document.getElementById('help-modal').classList.contains('visible')) {
+      toggleHelp();
+    } else if (activeScenarioId) {
+      activeScenarioId = null;
+      clearCascadeVisuals();
+      renderScenarios();
+    } else if (expandedClauseId) {
+      expandedClauseId = null;
+      clauseContainer.querySelectorAll('.clause.expanded').forEach(el => el.classList.remove('expanded'));
+    }
+  }
+  // M: toggle mode
+  if (e.key === 'm' && !e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
+    toggleMode();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// RESIZE HANDLER
+// ═══════════════════════════════════════════════════════════════
+let resizeDebounce = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeDebounce);
+  resizeDebounce = setTimeout(() => {
+    updateMinimap();
+    if (focusedClauseId) drawThreadsForClause(focusedClauseId);
+  }, 100);
+});
+
+</script>
+</body>
+</html>

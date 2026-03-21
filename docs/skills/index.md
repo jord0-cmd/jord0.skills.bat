@@ -1,6 +1,6 @@
 # Skills Overview
 
-14 skills. Zero dependencies (except NOTIFY and OPTIC). Copy a folder, get a superpower.
+18 skills. Zero dependencies (except NOTIFY and OPTIC). Copy a folder, get a superpower.
 
 ---
 
@@ -21,6 +21,17 @@ Tools that make Claude see code.
 |-------|-------------|--------|
 | [**REGTRAX**](regtrax.md) | Regex railroad visualizer — animated diagrams, photon traversal, live testing | Describe what to match |
 | [**REFRAX**](refrax.md) | Visual code comprehension — logic spines, risk dashboards, diff views | Describe what to analyse |
+
+## Analysis & Visualization
+
+Tools that make Claude analyse and present complex information interactively.
+
+| Skill | What It Does | Invoke |
+|-------|-------------|--------|
+| [**ARBITER**](arbiter.md) | Contract clause flow analyzer — risk visualization, breach cascades, redline suggestions | Paste a contract |
+| [**WITNESS**](witness.md) | Forensic timeline reconstructor — multi-source event correlation, contradiction detection | Paste evidence |
+| [**THREATMAP**](threatmap.md) | Visual threat model generator — STRIDE analysis, attack path simulation | Describe your architecture |
+| [**LEDGER**](ledger.md) | Kinetic financial visualizer — cash flow projections, runway analysis, scenario modeling | Describe your financials |
 
 ## Context & Memory
 
@@ -70,4 +81,4 @@ Tools that let Claude reach through the screen.
 ---
 
 !!! tip "Recommended combo"
-    Start every session with `/strict`, then `/forge` on new projects. Use `/portal` to save context before closing. Use `/recon` + `/recall` to build persistent knowledge. For visual projects, use `/optic` to generate images and `/locus` to make them interactive. That's the foundation — everything else builds on it.
+    Start every session with `/strict`, then `/forge` on new projects. Use `/portal` to save context before closing. Use `/recon` + `/recall` to build persistent knowledge. For visual projects, use `/optic` to generate images and `/locus` to make them interactive. For analysis, use ARBITER for contracts, WITNESS for timelines, THREATMAP for security, and LEDGER for finances. That's the foundation -- everything else builds on it.

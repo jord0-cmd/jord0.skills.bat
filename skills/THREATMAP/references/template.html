@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THREATMAP</title>
+<style>
+/* ── Reset & Theme ──────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080c14;--surface:#0d1520;--border:#1e2d42;--text:#e2e8f0;--dim:#7a8ba3;
+  --cyan:#22d3ee;--amber:#fbbf24;--violet:#a78bfa;--emerald:#34d399;--rose:#fb7185;
+  --crimson:#ef4444;--slate:#94a3b8;--teal:#0d9488;
+  --glow:rgba(34,211,238,0.5);--glow-amber:rgba(251,191,36,0.4);
+  --scanline:rgba(255,255,255,0.015);
+  --zone-external:#05060a;--zone-dmz:#0f1318;--zone-internal:#0c1229;--zone-secure:#081a1a;
+  --panel-bg:rgba(13,21,32,0.85);--panel-border:rgba(30,45,66,0.6);
+  --glass-blur:16px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Cascadia Code','Fira Code','JetBrains Mono',monospace;font-size:15px;overflow:hidden}
+body{background-image:
+  linear-gradient(var(--scanline) 1px, transparent 1px),
+  linear-gradient(90deg, var(--scanline) 1px, transparent 1px);
+  background-size:100% 3px, 50px 100%}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+#app{display:flex;flex-direction:column;height:100vh}
+header{display:flex;align-items:center;gap:12px;padding:12px 16px;flex-shrink:0;border-bottom:1px solid var(--border);background:var(--surface)}
+header h1{font-size:16px;letter-spacing:4px;color:var(--cyan);text-shadow:0 0 12px var(--glow),0 0 30px rgba(34,211,238,0.2);animation:titlePulse 4s ease-in-out infinite;white-space:nowrap}
+@keyframes titlePulse{0%,100%{text-shadow:0 0 12px var(--glow),0 0 30px rgba(34,211,238,0.15)}50%{text-shadow:0 0 16px var(--glow),0 0 40px rgba(34,211,238,0.3)}}
+#model-title{flex:1;font-size:13px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.header-btn{height:28px;padding:0 12px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--dim);cursor:pointer;font-family:inherit;font-size:11px;letter-spacing:1px;transition:all .2s;display:flex;align-items:center;gap:6px}
+.header-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.header-btn.active{border-color:var(--emerald);color:var(--emerald);background:rgba(52,211,153,0.08)}
+#help-btn{width:28px;padding:0;justify-content:center;border-radius:50%}
+
+/* ── Main Area ──────────────────────────────────────────────── */
+#main{flex:1;position:relative;overflow:hidden}
+#canvas-svg{width:100%;height:100%;display:block;cursor:grab}
+#canvas-svg:active{cursor:grabbing}
+#canvas-svg.dragging-node{cursor:grabbing}
+
+/* ── Trust Zone Backgrounds ─────────────────────────────────── */
+.trust-zone{stroke-width:1.5;stroke-dasharray:6 4;rx:12;ry:12;cursor:default}
+.trust-zone-label{font-family:inherit;font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:0.5}
+
+/* ── Node Shapes ────────────────────────────────────────────── */
+.node-group{cursor:pointer;transition:filter 0.3s}
+.node-group:hover{filter:brightness(1.2)}
+.node-group.selected{filter:brightness(1.3)}
+.node-group.dimmed{opacity:0.2;transition:opacity 0.4s}
+.node-group.scarred .node-shape{filter:drop-shadow(0 0 6px rgba(239,68,68,0.4)) !important}
+.node-label{font-family:inherit;font-size:13px;fill:var(--text);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.node-sublabel{font-family:inherit;font-size:9px;fill:var(--dim);text-anchor:middle;pointer-events:none}
+
+/* Process: hexagon */
+.node-shape-process{fill:var(--bg);stroke:#22d3ee;stroke-width:2;filter:drop-shadow(0 0 4px rgba(34,211,238,0.25))}
+.node-core-process{fill:rgba(34,211,238,0.08);animation:corePulse 3s ease-in-out infinite}
+@keyframes corePulse{0%,100%{opacity:0.3}50%{opacity:0.7}}
+
+/* Data Store: rounded rect with layered look */
+.node-shape-datastore{fill:var(--bg);stroke:var(--amber);stroke-width:2;filter:drop-shadow(0 0 4px rgba(251,191,36,0.25));rx:8;ry:8}
+.node-layer-datastore{fill:none;stroke:var(--amber);stroke-width:1;opacity:0.3;rx:8;ry:8}
+
+/* External Entity: jagged shape */
+.node-shape-external{fill:var(--bg);stroke:var(--rose);stroke-width:2;filter:drop-shadow(0 0 4px rgba(251,113,133,0.25))}
+
+/* Infrastructure: shield/chevron */
+.node-shape-infra{fill:var(--bg);stroke:var(--emerald);stroke-width:2;filter:drop-shadow(0 0 4px rgba(52,211,153,0.25))}
+
+/* ── Data Flows ─────────────────────────────────────────────── */
+.data-flow{fill:none;stroke:#2a3a52;stroke-linecap:round;transition:stroke 0.3s, stroke-width 0.3s}
+.data-flow.highlighted{stroke:var(--cyan);filter:drop-shadow(0 0 6px rgba(34,211,238,0.4))}
+.data-flow-arrow{fill:#2a3a52;transition:fill 0.3s}
+.data-flow-arrow.highlighted{fill:var(--cyan)}
+.flow-label{font-family:inherit;font-size:9px;fill:var(--dim);text-anchor:middle;pointer-events:none}
+.flow-heartbeat{fill:none;stroke-linecap:round;pointer-events:none}
+
+/* ── Threat Barnacles ───────────────────────────────────────── */
+.threat-barnacle{cursor:pointer;transition:filter 0.2s}
+.threat-barnacle:hover{filter:brightness(1.4)}
+.threat-glyph{stroke-width:1.5;fill:var(--bg)}
+.threat-aura{fill:none;stroke-width:1;opacity:0.4}
+@keyframes vibrate{0%,100%{transform:translate(0,0)}25%{transform:translate(-1px,1px)}50%{transform:translate(1px,-1px)}75%{transform:translate(-1px,-1px)}}
+@keyframes tremble{0%,100%{transform:translate(0,0)}50%{transform:translate(0.5px,-0.5px)}}
+.severity-critical{animation:vibrate 0.15s linear infinite, criticalPulse 1s ease-in-out infinite}
+@keyframes criticalPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.5)}}
+.severity-high{animation:tremble 0.3s linear infinite}
+
+/* ── Side Panel ─────────────────────────────────────────────── */
+#side-panel{position:absolute;top:0;right:-400px;width:380px;height:100%;background:var(--panel-bg);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));border-left:1px solid var(--panel-border);transition:right 0.3s ease;z-index:20;display:flex;flex-direction:column;overflow:hidden}
+#side-panel.open{right:0}
+#panel-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--panel-border);flex-shrink:0}
+#panel-title{font-size:13px;letter-spacing:1px;color:var(--cyan)}
+#panel-close{width:24px;height:24px;border:none;background:transparent;color:var(--dim);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;border-radius:4px}
+#panel-close:hover{color:var(--text);background:rgba(255,255,255,0.05)}
+#panel-body{flex:1;overflow-y:auto;padding:16px}
+#panel-body::-webkit-scrollbar{width:4px}
+#panel-body::-webkit-scrollbar-track{background:transparent}
+#panel-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* Panel content styles */
+.panel-section{margin-bottom:16px}
+.panel-section-title{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.panel-field{margin-bottom:10px}
+.panel-field-label{font-size:10px;color:var(--dim);margin-bottom:2px}
+.panel-field-value{font-size:12px;color:var(--text);line-height:1.5}
+.panel-tag{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;letter-spacing:1px;margin-right:4px;margin-bottom:4px}
+.panel-tag-stride{border:1px solid}
+.panel-threat-item{padding:8px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;cursor:pointer;transition:border-color 0.2s}
+.panel-threat-item:hover{border-color:var(--cyan)}
+.panel-threat-severity{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.panel-flow-item{padding:6px 10px;border-left:2px solid var(--border);margin-bottom:4px;font-size:11px}
+.simulate-btn{width:100%;padding:10px;border:1px solid var(--crimson);background:rgba(239,68,68,0.08);color:var(--crimson);border-radius:6px;font-family:inherit;font-size:12px;letter-spacing:1px;cursor:pointer;transition:all 0.2s;margin-top:8px}
+.simulate-btn:hover{background:rgba(239,68,68,0.15);box-shadow:0 0 12px rgba(239,68,68,0.2)}
+.simulate-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+/* ── Bottom Summary Bar ─────────────────────────────────────── */
+#summary-bar{display:flex;align-items:center;gap:16px;padding:8px 16px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;overflow-x:auto}
+.summary-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim);white-space:nowrap}
+.summary-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.summary-count{color:var(--text);font-weight:600}
+#summary-assets{margin-left:auto;color:var(--dim);font-size:11px}
+
+/* ── Help Modal ─────────────────────────────────────────────── */
+#help-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;align-items:center;justify-content:center}
+#help-modal.visible{display:flex}
+#help-content{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:560px;width:90%;max-height:80vh;overflow-y:auto}
+#help-content h2{color:var(--cyan);margin-bottom:16px;font-size:16px;letter-spacing:2px}
+#help-content h3{color:var(--text);margin:14px 0 6px;font-size:12px;letter-spacing:1px}
+#help-content p,#help-content li{font-size:12px;color:var(--dim);line-height:1.6;margin-bottom:4px}
+#help-content ul{padding-left:16px}
+#help-content kbd{background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:11px;color:var(--text)}
+.help-color-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:11px;color:var(--dim)}
+.help-color-swatch{width:12px;height:12px;border-radius:2px;flex-shrink:0}
+
+/* ── Attack Animation Overlay ───────────────────────────────── */
+.attack-tendril{fill:none;stroke:var(--crimson);stroke-width:1;opacity:0;stroke-dasharray:4 6}
+.attack-arc{fill:none;stroke:var(--crimson);stroke-width:3;opacity:0;stroke-linecap:round;filter:drop-shadow(0 0 8px rgba(239,68,68,0.6))}
+.attack-spread{fill:rgba(239,68,68,0.05);stroke:none;opacity:0}
+.node-compromised .node-shape,.node-compromised .node-shape-process,.node-compromised .node-shape-datastore,.node-compromised .node-shape-external,.node-compromised .node-shape-infra{stroke:var(--crimson) !important;filter:drop-shadow(0 0 10px rgba(239,68,68,0.5)) !important}
+.node-necrosis{fill:rgba(239,68,68,0.03);stroke:none;opacity:0}
+
+/* ── Loading / Empty State ──────────────────────────────────── */
+#empty-state{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:var(--dim);font-size:13px;pointer-events:none}
+.spinner{width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Controls deployed state ────────────────────────────────── */
+.control-shield{opacity:0;transition:opacity 0.6s}
+.controls-on .control-shield{opacity:1}
+.controls-on .data-flow{stroke:#3a4a62}
+.controls-on .node-group{filter:brightness(1.05)}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>THREATMAP</h1>
+    <span id="model-title">Waiting for data...</span>
+    <button class="header-btn" id="controls-btn" title="Toggle security controls">
+      <span>&#9655;</span> CONTROLS
+    </button>
+    <button class="header-btn" id="help-btn" title="Help">?</button>
+  </header>
+  <div id="main">
+    <svg id="canvas-svg" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="glowSm"><feGaussianBlur stdDeviation="2" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <filter id="glowMd"><feGaussianBlur stdDeviation="4" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <filter id="glowLg"><feGaussianBlur stdDeviation="8" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <g id="zone-layer"></g>
+      <g id="flow-layer"></g>
+      <g id="control-layer"></g>
+      <g id="node-layer"></g>
+      <g id="threat-layer"></g>
+      <g id="attack-layer"></g>
+    </svg>
+    <div id="empty-state">
+      <div class="spinner"></div>
+      <span>Awaiting threat model data...</span>
+    </div>
+    <div id="side-panel">
+      <div id="panel-header">
+        <span id="panel-title">Details</span>
+        <button id="panel-close">&times;</button>
+      </div>
+      <div id="panel-body"></div>
+    </div>
+  </div>
+  <div id="summary-bar">
+    <span id="summary-assets">No data loaded</span>
+  </div>
+</div>
+
+<!-- Help Modal -->
+<div id="help-modal">
+  <div id="help-content">
+    <h2>THREATMAP</h2>
+    <p>Visual Threat Model Generator — Force-directed security architecture with STRIDE-categorized threats.</p>
+    <h3>Interactions</h3>
+    <ul>
+      <li><kbd>Click</kbd> a node to inspect its details, threats, and data flows</li>
+      <li><kbd>Click</kbd> a threat barnacle to see severity, STRIDE category, and blast radius</li>
+      <li><kbd>Hover</kbd> a node to highlight connected data flows</li>
+      <li><kbd>Drag</kbd> nodes to reposition them in the force simulation</li>
+      <li><kbd>Esc</kbd> to close the side panel and reset highlights</li>
+      <li><kbd>Controls</kbd> button to deploy/retract security controls</li>
+    </ul>
+    <h3>STRIDE Categories</h3>
+    <div class="help-color-row"><div class="help-color-swatch" style="background:#a78bfa"></div>Spoofing — Identity impersonation</div>
+    <div class="help-color-row"><div class="help-color-swatch" style="background:#fbbf24"></div>Tampering — Data modification</div>
+    <div class="help-color-row"><div class="help-color-swatch" style="background:#94a3b8"></div>Repudiation — Action deniability</div>
+    <div class="help-color-row"><div class="help-color-swatch" style="background:#22d3ee"></div>Information Disclosure — Data leakage</div>
+    <div class="help-color-row"><div class="help-color-swatch" style="background:#fb7185"></div>Denial of Service — Availability attacks</div>
+    <div class="help-color-row"><div class="help-color-swatch" style="background:#ef4444"></div>Elevation of Privilege — Unauthorized access</div>
+    <h3>Severity Levels</h3>
+    <div class="help-color-row"><div class="help-color-swatch" style="background:#dc2626"></div>Critical (9-10) — Vibrating marker</div>
+    <div class="help-color-row"><div class="help-color-swatch" style="background:#ea580c"></div>High (7-8.9) — Trembling marker</div>
+    <div class="help-color-row"><div class="help-color-swatch" style="background:#d97706"></div>Medium (4-6.9) — Steady marker</div>
+    <div class="help-color-row"><div class="help-color-swatch" style="background:#0d9488"></div>Low (0.1-3.9) — Calm marker</div>
+    <div class="help-color-row"><div class="help-color-swatch" style="background:#64748b"></div>Info — Dim marker</div>
+    <h3>Node Types</h3>
+    <div class="help-color-row"><div class="help-color-swatch" style="background:#22d3ee"></div>Process — Hexagonal, pulsing core</div>
+    <div class="help-color-row"><div class="help-color-swatch" style="background:#fbbf24"></div>Data Store — Rounded rect, layered</div>
+    <div class="help-color-row"><div class="help-color-swatch" style="background:#fb7185"></div>External Entity — Jagged, untrusted</div>
+    <div class="help-color-row"><div class="help-color-swatch" style="background:#34d399"></div>Infrastructure — Shield/chevron</div>
+    <h3>Attack Simulation</h3>
+    <p>Click a threat barnacle, then "Simulate Attack" in the panel. Watch tendrils probe, exploit arcs fire, and lateral movement spread through the graph. Compromised nodes glow red with persistent scars.</p>
+    <p style="margin-top:16px;font-size:11px;color:var(--dim)">THREATMAP v1.0 — jord0.skills</p>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   THREATMAP — Force-Directed Threat Model Visualizer
+   Self-contained. No dependencies. Polls /data.json every 500ms.
+   ═══════════════════════════════════════════════════════════════ */
+
+(function() {
+'use strict';
+
+/* ── Constants ──────────────────────────────────────────────── */
+var STRIDE_COLORS = {
+  spoofing: '#a78bfa',
+  tampering: '#fbbf24',
+  repudiation: '#94a3b8',
+  'information disclosure': '#22d3ee',
+  'denial of service': '#fb7185',
+  'elevation of privilege': '#ef4444'
+};
+
+var SEVERITY_COLORS = {
+  critical: '#dc2626',
+  high: '#ea580c',
+  medium: '#d97706',
+  low: '#0d9488',
+  info: '#64748b'
+};
+
+var ZONE_FILLS = {
+  external: '#05060a',
+  dmz: '#0f1318',
+  internal: '#0c1229',
+  secure: '#081a1a'
+};
+
+var ZONE_STROKES = {
+  external: '#1a1a2e',
+  dmz: '#1e2d42',
+  internal: '#1e2848',
+  secure: '#0d3a3a'
+};
+
+var NODE_COLORS = {
+  process: '#22d3ee',
+  datastore: '#fbbf24',
+  external: '#fb7185',
+  infrastructure: '#34d399'
+};
+
+var REPULSION_FORCE = 8000;
+var SPRING_FORCE = 0.005;
+var SPRING_LENGTH = 180;
+var DAMPING = 0.85;
+var ZONE_GRAVITY = 0.02;
+var COLLISION_RADIUS = 80;
+var CONTROLS_EXPAND = 1.35;
+
+/* ── State ──────────────────────────────────────────────────── */
+var model = null;
+var nodes = [];
+var edges = [];
+var threats = [];
+var controls = [];
+var attackPaths = [];
+var nodeMap = {};
+var threatMap = {};
+var controlsDeployed = false;
+var selectedNode = null;
+var selectedThreat = null;
+var hoveredNode = null;
+var dragNode = null;
+var dragOffset = { x: 0, y: 0 };
+var panOffset = { x: 0, y: 0 };
+var isPanning = false;
+var panStart = { x: 0, y: 0 };
+var simulationRunning = true;
+var attackAnimating = false;
+var scarredNodes = new Set();
+var lastDataHash = '';
+var svgRect = null;
+
+/* ── DOM Refs ───────────────────────────────────────────────── */
+var svg = document.getElementById('canvas-svg');
+var zoneLayer = document.getElementById('zone-layer');
+var flowLayer = document.getElementById('flow-layer');
+var controlLayer = document.getElementById('control-layer');
+var nodeLayer = document.getElementById('node-layer');
+var threatLayer = document.getElementById('threat-layer');
+var attackLayer = document.getElementById('attack-layer');
+var sidePanel = document.getElementById('side-panel');
+var panelTitle = document.getElementById('panel-title');
+var panelBody = document.getElementById('panel-body');
+var panelClose = document.getElementById('panel-close');
+var summaryBar = document.getElementById('summary-bar');
+var emptyState = document.getElementById('empty-state');
+var modelTitle = document.getElementById('model-title');
+var controlsBtn = document.getElementById('controls-btn');
+var helpBtn = document.getElementById('help-btn');
+var helpModal = document.getElementById('help-modal');
+
+/* ── Utility Functions ──────────────────────────────────────── */
+function svgNS(tag) {
+  return document.createElementNS('http://www.w3.org/2000/svg', tag);
+}
+
+function clearChildren(el) {
+  while (el.firstChild) el.removeChild(el.firstChild);
+}
+
+function clamp(v, min, max) {
+  return v < min ? min : v > max ? max : v;
+}
+
+function dist(a, b) {
+  var dx = a.x - b.x;
+  var dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function getSeverityLevel(score) {
+  if (score >= 9) return 'critical';
+  if (score >= 7) return 'high';
+  if (score >= 4) return 'medium';
+  if (score >= 0.1) return 'low';
+  return 'info';
+}
+
+function getSeverityColor(score) {
+  return SEVERITY_COLORS[getSeverityLevel(score)] || SEVERITY_COLORS.info;
+}
+
+function getStrideColor(category) {
+  var key = (category || '').toLowerCase();
+  return STRIDE_COLORS[key] || '#64748b';
+}
+
+function escapeHtml(str) {
+  var div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+function getNodeSize(criticality) {
+  var c = clamp(criticality || 3, 1, 5);
+  return 30 + (c - 1) * 10;
+}
+
+/* ── Zone Layout Helpers ────────────────────────────────────── */
+var zoneOrder = ['external', 'dmz', 'internal', 'secure'];
+
+function getZoneCenter(zoneName, w, h) {
+  var idx = zoneOrder.indexOf((zoneName || '').toLowerCase());
+  if (idx < 0) idx = 0;
+  var bandWidth = w / zoneOrder.length;
+  return {
+    x: bandWidth * idx + bandWidth / 2,
+    y: h / 2
+  };
+}
+
+function getZoneRect(zoneName, w, h) {
+  var idx = zoneOrder.indexOf((zoneName || '').toLowerCase());
+  if (idx < 0) idx = 0;
+  var bandWidth = w / zoneOrder.length;
+  return {
+    x: bandWidth * idx + 4,
+    y: 4,
+    width: bandWidth - 8,
+    height: h - 8
+  };
+}
+
+/* ── SVG Shape Generators ───────────────────────────────────── */
+function hexPoints(cx, cy, r) {
+  var pts = [];
+  for (var i = 0; i < 6; i++) {
+    var angle = (Math.PI / 3) * i - Math.PI / 6;
+    pts.push((cx + r * Math.cos(angle)).toFixed(1) + ',' + (cy + r * Math.sin(angle)).toFixed(1));
+  }
+  return pts.join(' ');
+}
+
+function jaggedPoints(cx, cy, r) {
+  var pts = [];
+  var segs = 8;
+  for (var i = 0; i < segs; i++) {
+    var angle = (2 * Math.PI / segs) * i - Math.PI / 2;
+    var jitter = (i % 2 === 0) ? r : r * 0.7;
+    pts.push((cx + jitter * Math.cos(angle)).toFixed(1) + ',' + (cy + jitter * Math.sin(angle)).toFixed(1));
+  }
+  return pts.join(' ');
+}
+
+function shieldPoints(cx, cy, r) {
+  var w = r * 0.9;
+  var h = r * 1.1;
+  return [
+    cx + ',' + (cy - h),
+    (cx + w) + ',' + (cy - h * 0.4),
+    (cx + w * 0.8) + ',' + (cy + h * 0.6),
+    cx + ',' + (cy + h),
+    (cx - w * 0.8) + ',' + (cy + h * 0.6),
+    (cx - w) + ',' + (cy - h * 0.4)
+  ].join(' ');
+}
+
+/* ── Build Node SVG Group ───────────────────────────────────── */
+function buildNodeSVG(node) {
+  var g = svgNS('g');
+  g.setAttribute('class', 'node-group' + (scarredNodes.has(node.id) ? ' scarred' : ''));
+  g.setAttribute('data-id', node.id);
+  var size = getNodeSize(node.criticality);
+  var color = NODE_COLORS[node.type] || NODE_COLORS.process;
+
+  if (node.type === 'process') {
+    var hexCore = svgNS('polygon');
+    hexCore.setAttribute('points', hexPoints(0, 0, size * 0.6));
+    hexCore.setAttribute('class', 'node-core-process');
+    hexCore.setAttribute('fill', 'rgba(34,211,238,0.08)');
+    g.appendChild(hexCore);
+
+    var hex = svgNS('polygon');
+    hex.setAttribute('points', hexPoints(0, 0, size));
+    hex.setAttribute('class', 'node-shape node-shape-process');
+    g.appendChild(hex);
+  } else if (node.type === 'datastore') {
+    var layerBg = svgNS('rect');
+    layerBg.setAttribute('x', -size + 3);
+    layerBg.setAttribute('y', -size * 0.65 + 3);
+    layerBg.setAttribute('width', size * 2 - 6);
+    layerBg.setAttribute('height', size * 1.3 - 6);
+    layerBg.setAttribute('class', 'node-layer-datastore');
+    g.appendChild(layerBg);
+
+    var rect = svgNS('rect');
+    rect.setAttribute('x', -size);
+    rect.setAttribute('y', -size * 0.65);
+    rect.setAttribute('width', size * 2);
+    rect.setAttribute('height', size * 1.3);
+    rect.setAttribute('class', 'node-shape node-shape-datastore');
+    g.appendChild(rect);
+  } else if (node.type === 'external') {
+    var jag = svgNS('polygon');
+    jag.setAttribute('points', jaggedPoints(0, 0, size));
+    jag.setAttribute('class', 'node-shape node-shape-external');
+    g.appendChild(jag);
+  } else if (node.type === 'infrastructure') {
+    var shield = svgNS('polygon');
+    shield.setAttribute('points', shieldPoints(0, 0, size));
+    shield.setAttribute('class', 'node-shape node-shape-infra');
+    g.appendChild(shield);
+  }
+
+  var label = svgNS('text');
+  label.setAttribute('class', 'node-label');
+  label.setAttribute('y', '-2');
+  label.textContent = truncate(node.name || node.id, 16);
+  g.appendChild(label);
+
+  if (node.subtype) {
+    var sub = svgNS('text');
+    sub.setAttribute('class', 'node-sublabel');
+    sub.setAttribute('y', '12');
+    sub.textContent = node.subtype;
+    g.appendChild(sub);
+  }
+
+  return g;
+}
+
+function truncate(str, max) {
+  if (!str) return '';
+  return str.length > max ? str.substring(0, max - 1) + '\u2026' : str;
+}
+
+/* ── Build Data Flow SVG ────────────────────────────────────── */
+function buildFlowSVG(edge) {
+  var g = svgNS('g');
+  g.setAttribute('data-flow-id', edge.id);
+
+  var path = svgNS('path');
+  var sensitivity = clamp(edge.sensitivity || 1, 1, 4);
+  path.setAttribute('stroke-width', sensitivity);
+  path.setAttribute('class', 'data-flow');
+  path.setAttribute('data-source', edge.source);
+  path.setAttribute('data-target', edge.target);
+  g.appendChild(path);
+
+  var heartbeat = svgNS('path');
+  heartbeat.setAttribute('class', 'flow-heartbeat');
+  heartbeat.setAttribute('stroke', '#2a3a52');
+  heartbeat.setAttribute('stroke-width', sensitivity);
+  heartbeat.setAttribute('stroke-dasharray', (8 + sensitivity * 2) + ' ' + (12 + sensitivity * 2));
+  heartbeat.setAttribute('opacity', '0.6');
+  g.appendChild(heartbeat);
+
+  var arrow = svgNS('polygon');
+  arrow.setAttribute('class', 'data-flow-arrow');
+  arrow.setAttribute('data-source', edge.source);
+  arrow.setAttribute('data-target', edge.target);
+  g.appendChild(arrow);
+
+  if (edge.label) {
+    var lbl = svgNS('text');
+    lbl.setAttribute('class', 'flow-label');
+    lbl.textContent = edge.label;
+    g.appendChild(lbl);
+  }
+
+  return g;
+}
+
+/* ── Build Threat Barnacle SVG ──────────────────────────────── */
+function buildThreatSVG(threat, index) {
+  var g = svgNS('g');
+  var sevLevel = getSeverityLevel(threat.severity || 0);
+  var sevClass = (sevLevel === 'critical' || sevLevel === 'high') ? ' severity-' + sevLevel : '';
+  g.setAttribute('class', 'threat-barnacle' + sevClass);
+  g.setAttribute('data-threat-id', threat.id);
+
+  var strideColor = getStrideColor(threat.stride);
+  var sevColor = getSeverityColor(threat.severity || 0);
+  var severity = threat.severity || 0;
+  var r = 4 + (severity / 10) * 6;
+
+  var aura = svgNS('circle');
+  aura.setAttribute('r', r + 4);
+  aura.setAttribute('class', 'threat-aura');
+  aura.setAttribute('stroke', strideColor);
+  g.appendChild(aura);
+
+  var shape;
+  var strideKey = (threat.stride || '').toLowerCase();
+  if (strideKey === 'spoofing') {
+    shape = svgNS('polygon');
+    shape.setAttribute('points', '0,-' + r + ' ' + (r * 0.87) + ',' + (r * 0.5) + ' ' + (-r * 0.87) + ',' + (r * 0.5));
+  } else if (strideKey === 'tampering') {
+    shape = svgNS('rect');
+    shape.setAttribute('x', -r * 0.7);
+    shape.setAttribute('y', -r * 0.7);
+    shape.setAttribute('width', r * 1.4);
+    shape.setAttribute('height', r * 1.4);
+    shape.setAttribute('transform', 'rotate(45)');
+  } else if (strideKey === 'repudiation') {
+    shape = svgNS('rect');
+    shape.setAttribute('x', -r * 0.7);
+    shape.setAttribute('y', -r * 0.5);
+    shape.setAttribute('width', r * 1.4);
+    shape.setAttribute('height', r * 1.0);
+    shape.setAttribute('rx', '2');
+  } else if (strideKey === 'information disclosure') {
+    shape = svgNS('circle');
+    shape.setAttribute('r', r * 0.7);
+  } else if (strideKey === 'denial of service') {
+    shape = svgNS('polygon');
+    var pts = [];
+    for (var i = 0; i < 5; i++) {
+      var angle = (Math.PI * 2 / 5) * i - Math.PI / 2;
+      var sr = (i % 2 === 0) ? r : r * 0.5;
+      pts.push((sr * Math.cos(angle)).toFixed(1) + ',' + (sr * Math.sin(angle)).toFixed(1));
+    }
+    shape.setAttribute('points', pts.join(' '));
+  } else if (strideKey === 'elevation of privilege') {
+    shape = svgNS('polygon');
+    shape.setAttribute('points', '0,-' + r + ' ' + r + ',' + r + ' -' + r + ',' + r);
+  } else {
+    shape = svgNS('circle');
+    shape.setAttribute('r', r * 0.7);
+  }
+
+  shape.setAttribute('class', 'threat-glyph');
+  shape.setAttribute('stroke', strideColor);
+  shape.setAttribute('fill', sevColor);
+  shape.setAttribute('fill-opacity', '0.3');
+  g.appendChild(shape);
+
+  return g;
+}
+
+/* ── Build Control Shield SVG ───────────────────────────────── */
+function buildControlSVG(ctrl) {
+  var g = svgNS('g');
+  g.setAttribute('class', 'control-shield');
+  g.setAttribute('data-control-id', ctrl.id);
+
+  var circle = svgNS('circle');
+  circle.setAttribute('r', '14');
+  circle.setAttribute('fill', 'rgba(52,211,153,0.06)');
+  circle.setAttribute('stroke', '#34d399');
+  circle.setAttribute('stroke-width', '1.5');
+  circle.setAttribute('stroke-dasharray', '3 2');
+  g.appendChild(circle);
+
+  var icon = svgNS('text');
+  icon.setAttribute('text-anchor', 'middle');
+  icon.setAttribute('dominant-baseline', 'central');
+  icon.setAttribute('font-size', '10');
+  icon.setAttribute('fill', '#34d399');
+  icon.textContent = '\u2731';
+  g.appendChild(icon);
+
+  return g;
+}
+
+/* ── Force Simulation ───────────────────────────────────────── */
+function initNodePositions(w, h) {
+  for (var i = 0; i < nodes.length; i++) {
+    var n = nodes[i];
+    if (n.fx !== undefined) continue;
+    var zc = getZoneCenter(n.zone, w, h);
+    n.x = zc.x + (Math.random() - 0.5) * 100;
+    n.y = zc.y + (Math.random() - 0.5) * (h * 0.6);
+    n.vx = 0;
+    n.vy = 0;
+  }
+}
+
+function simulate(w, h) {
+  if (!simulationRunning) return;
+  var expand = controlsDeployed ? CONTROLS_EXPAND : 1.0;
+  var n = nodes.length;
+
+  for (var i = 0; i < n; i++) {
+    var ni = nodes[i];
+    if (ni === dragNode) continue;
+
+    var fx = 0, fy = 0;
+
+    /* Repulsion between all nodes */
+    for (var j = 0; j < n; j++) {
+      if (i === j) continue;
+      var nj = nodes[j];
+      var dx = ni.x - nj.x;
+      var dy = ni.y - nj.y;
+      var d2 = dx * dx + dy * dy;
+      if (d2 < 1) d2 = 1;
+      var d = Math.sqrt(d2);
+      var force = (REPULSION_FORCE * expand) / d2;
+      fx += (dx / d) * force;
+      fy += (dy / d) * force;
+    }
+
+    /* Spring attraction along edges */
+    for (var e = 0; e < edges.length; e++) {
+      var edge = edges[e];
+      var other = null;
+      if (edge.sourceNode === ni) other = edge.targetNode;
+      else if (edge.targetNode === ni) other = edge.sourceNode;
+      if (!other) continue;
+
+      var sdx = other.x - ni.x;
+      var sdy = other.y - ni.y;
+      var sd = Math.sqrt(sdx * sdx + sdy * sdy);
+      if (sd < 1) sd = 1;
+      var targetLen = SPRING_LENGTH * expand;
+      var springF = SPRING_FORCE * (sd - targetLen);
+      fx += (sdx / sd) * springF;
+      fy += (sdy / sd) * springF;
+    }
+
+    /* Zone gravity */
+    var zc = getZoneCenter(ni.zone, w, h);
+    zc.x *= expand > 1 ? (1 + (expand - 1) * 0.5) : 1;
+    fx += (zc.x - ni.x) * ZONE_GRAVITY;
+    fy += (zc.y - ni.y) * ZONE_GRAVITY * 0.5;
+
+    /* Collision avoidance */
+    for (var k = 0; k < n; k++) {
+      if (i === k) continue;
+      var nk = nodes[k];
+      var cdx = ni.x - nk.x;
+      var cdy = ni.y - nk.y;
+      var cd = Math.sqrt(cdx * cdx + cdy * cdy);
+      if (cd < COLLISION_RADIUS && cd > 0) {
+        var overlap = (COLLISION_RADIUS - cd) / cd;
+        fx += cdx * overlap * 0.5;
+        fy += cdy * overlap * 0.5;
+      }
+    }
+
+    ni.vx = (ni.vx + fx) * DAMPING;
+    ni.vy = (ni.vy + fy) * DAMPING;
+  }
+
+  /* Apply velocities and clamp to bounds */
+  var margin = 60;
+  for (var m = 0; m < n; m++) {
+    var nm = nodes[m];
+    if (nm === dragNode) continue;
+    nm.x += nm.vx;
+    nm.y += nm.vy;
+    nm.x = clamp(nm.x, margin, w - margin);
+    nm.y = clamp(nm.y, margin, h - margin);
+  }
+}
+
+/* ── Render Loop ────────────────────────────────────────────── */
+var heartbeatPhase = 0;
+
+function renderFrame() {
+  requestAnimationFrame(renderFrame);
+  if (!model || nodes.length === 0) return;
+
+  svgRect = svg.getBoundingClientRect();
+  var w = svgRect.width;
+  var h = svgRect.height;
+  if (w < 10 || h < 10) return;
+
+  svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+  simulate(w, h);
+  heartbeatPhase += 0.5;
+
+  /* Update zone rects */
+  var zoneEls = zoneLayer.children;
+  for (var z = 0; z < zoneOrder.length; z++) {
+    var zr = getZoneRect(zoneOrder[z], w, h);
+    var expand = controlsDeployed ? CONTROLS_EXPAND : 1.0;
+    if (zoneEls[z * 2]) {
+      var rectEl = zoneEls[z * 2];
+      rectEl.setAttribute('x', zr.x);
+      rectEl.setAttribute('y', zr.y);
+      rectEl.setAttribute('width', zr.width);
+      rectEl.setAttribute('height', zr.height);
+    }
+    if (zoneEls[z * 2 + 1]) {
+      zoneEls[z * 2 + 1].setAttribute('x', zr.x + 12);
+      zoneEls[z * 2 + 1].setAttribute('y', zr.y + 20);
+    }
+  }
+
+  /* Update node positions */
+  var nodeEls = nodeLayer.children;
+  for (var ni = 0; ni < nodes.length; ni++) {
+    var nd = nodes[ni];
+    if (nodeEls[ni]) {
+      nodeEls[ni].setAttribute('transform', 'translate(' + nd.x.toFixed(1) + ',' + nd.y.toFixed(1) + ')');
+    }
+  }
+
+  /* Update flow paths */
+  var flowEls = flowLayer.children;
+  for (var fi = 0; fi < edges.length; fi++) {
+    var edge = edges[fi];
+    var sn = edge.sourceNode;
+    var tn = edge.targetNode;
+    if (!sn || !tn) continue;
+    var fg = flowEls[fi];
+    if (!fg) continue;
+
+    var midX = (sn.x + tn.x) / 2;
+    var midY = (sn.y + tn.y) / 2;
+    var dx = tn.x - sn.x;
+    var dy = tn.y - sn.y;
+    var len = Math.sqrt(dx * dx + dy * dy);
+    var perpX = len > 0 ? -dy / len : 0;
+    var perpY = len > 0 ? dx / len : 0;
+    var curvature = 30 + (fi % 3) * 15;
+    var cx = midX + perpX * curvature;
+    var cy = midY + perpY * curvature;
+
+    var pathD = 'M' + sn.x.toFixed(1) + ',' + sn.y.toFixed(1) +
+                ' Q' + cx.toFixed(1) + ',' + cy.toFixed(1) +
+                ' ' + tn.x.toFixed(1) + ',' + tn.y.toFixed(1);
+
+    var mainPath = fg.children[0];
+    var hbPath = fg.children[1];
+    var arrowEl = fg.children[2];
+
+    if (mainPath) mainPath.setAttribute('d', pathD);
+    if (hbPath) {
+      hbPath.setAttribute('d', pathD);
+      hbPath.setAttribute('stroke-dashoffset', heartbeatPhase);
+    }
+
+    /* Arrow at target end */
+    if (arrowEl && len > 0) {
+      var t = 0.92;
+      var ax = (1 - t) * (1 - t) * sn.x + 2 * (1 - t) * t * cx + t * t * tn.x;
+      var ay = (1 - t) * (1 - t) * sn.y + 2 * (1 - t) * t * cy + t * t * tn.y;
+      var tangentX = 2 * (1 - t) * (cx - sn.x) + 2 * t * (tn.x - cx);
+      var tangentY = 2 * (1 - t) * (cy - sn.y) + 2 * t * (tn.y - cy);
+      var tLen = Math.sqrt(tangentX * tangentX + tangentY * tangentY);
+      if (tLen > 0) {
+        tangentX /= tLen;
+        tangentY /= tLen;
+      }
+      var arrowSize = 6;
+      var p1x = ax + tangentX * arrowSize;
+      var p1y = ay + tangentY * arrowSize;
+      var p2x = ax - tangentY * arrowSize * 0.5;
+      var p2y = ay + tangentX * arrowSize * 0.5;
+      var p3x = ax + tangentY * arrowSize * 0.5;
+      var p3y = ay - tangentX * arrowSize * 0.5;
+      arrowEl.setAttribute('points',
+        p1x.toFixed(1) + ',' + p1y.toFixed(1) + ' ' +
+        p2x.toFixed(1) + ',' + p2y.toFixed(1) + ' ' +
+        p3x.toFixed(1) + ',' + p3y.toFixed(1));
+    }
+
+    /* Flow label */
+    if (fg.children[3]) {
+      fg.children[3].setAttribute('x', cx.toFixed(1));
+      fg.children[3].setAttribute('y', (cy - 8).toFixed(1));
+    }
+  }
+
+  /* Update threat barnacle positions (orbit around parent node) */
+  var threatEls = threatLayer.children;
+  var threatIdx = 0;
+  for (var ti = 0; ti < threats.length; ti++) {
+    var th = threats[ti];
+    var parentNode = nodeMap[th.assetId];
+    if (!parentNode || !threatEls[threatIdx]) { threatIdx++; continue; }
+
+    var nodeThreats = threats.filter(function(t) { return t.assetId === th.assetId; });
+    var localIdx = nodeThreats.indexOf(th);
+    var totalOnNode = nodeThreats.length;
+    var orbitR = getNodeSize(parentNode.criticality) + 20;
+    var angleStep = (2 * Math.PI) / Math.max(totalOnNode, 1);
+    var orbitAngle = angleStep * localIdx + heartbeatPhase * 0.005;
+
+    var tx = parentNode.x + orbitR * Math.cos(orbitAngle);
+    var ty = parentNode.y + orbitR * Math.sin(orbitAngle);
+    threatEls[threatIdx].setAttribute('transform', 'translate(' + tx.toFixed(1) + ',' + ty.toFixed(1) + ')');
+    threatIdx++;
+  }
+
+  /* Update control shield positions */
+  if (controlsDeployed) {
+    var ctrlEls = controlLayer.children;
+    for (var ci = 0; ci < controls.length; ci++) {
+      var ctrl = controls[ci];
+      if (!ctrlEls[ci]) continue;
+      var ctrlAssets = ctrl.assets || [];
+      if (ctrlAssets.length === 0) continue;
+      var cx2 = 0, cy2 = 0, count = 0;
+      for (var ca = 0; ca < ctrlAssets.length; ca++) {
+        var an = nodeMap[ctrlAssets[ca]];
+        if (an) { cx2 += an.x; cy2 += an.y; count++; }
+      }
+      if (count > 0) {
+        cx2 /= count;
+        cy2 /= count;
+        ctrlEls[ci].setAttribute('transform', 'translate(' + (cx2 + 20).toFixed(1) + ',' + (cy2 - 20).toFixed(1) + ')');
+      }
+    }
+  }
+}
+
+/* ── Data Processing ────────────────────────────────────────── */
+function processData(data) {
+  model = data;
+  nodes = [];
+  edges = [];
+  threats = [];
+  controls = [];
+  attackPaths = [];
+  nodeMap = {};
+  threatMap = {};
+
+  /* Process assets */
+  var assets = data.assets || [];
+  for (var i = 0; i < assets.length; i++) {
+    var a = assets[i];
+    var node = {
+      id: a.id,
+      name: a.name || a.id,
+      type: (a.type || 'process').toLowerCase(),
+      subtype: a.subtype || '',
+      zone: (a.zone || 'internal').toLowerCase(),
+      criticality: a.criticality || 3,
+      description: a.description || '',
+      x: 0, y: 0, vx: 0, vy: 0
+    };
+    nodes.push(node);
+    nodeMap[node.id] = node;
+  }
+
+  /* Process data flows */
+  var flows = data.dataFlows || [];
+  for (var j = 0; j < flows.length; j++) {
+    var f = flows[j];
+    var edge = {
+      id: f.id || ('flow-' + j),
+      source: f.source,
+      target: f.target,
+      label: f.label || '',
+      protocol: f.protocol || '',
+      sensitivity: f.sensitivity || 1,
+      encrypted: f.encrypted !== false,
+      sourceNode: nodeMap[f.source] || null,
+      targetNode: nodeMap[f.target] || null
+    };
+    edges.push(edge);
+  }
+
+  /* Process threats */
+  var rawThreats = data.threats || [];
+  for (var k = 0; k < rawThreats.length; k++) {
+    var t = rawThreats[k];
+    var threat = {
+      id: t.id || ('threat-' + k),
+      title: t.title || 'Unknown Threat',
+      stride: t.stride || 'Tampering',
+      severity: t.severity || 5,
+      assetId: t.assetId || (t.assets && t.assets[0]) || '',
+      assets: t.assets || [t.assetId].filter(Boolean),
+      description: t.description || '',
+      mitigation: t.mitigation || '',
+      attackPathId: t.attackPathId || null
+    };
+    threats.push(threat);
+    threatMap[threat.id] = threat;
+  }
+
+  /* Process controls */
+  var rawControls = data.controls || [];
+  for (var c = 0; c < rawControls.length; c++) {
+    var ctrl = rawControls[c];
+    controls.push({
+      id: ctrl.id || ('ctrl-' + c),
+      name: ctrl.name || 'Control',
+      type: ctrl.type || 'preventive',
+      description: ctrl.description || '',
+      assets: ctrl.assets || [],
+      mitigates: ctrl.mitigates || []
+    });
+  }
+
+  /* Process attack paths */
+  attackPaths = data.attackPaths || [];
+}
+
+/* ── Full Render (on data change) ───────────────────────────── */
+function fullRender() {
+  if (!model) return;
+
+  emptyState.style.display = 'none';
+  modelTitle.textContent = model.title || model.name || 'Threat Model';
+
+  svgRect = svg.getBoundingClientRect();
+  var w = svgRect.width;
+  var h = svgRect.height;
+  svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+
+  initNodePositions(w, h);
+
+  /* Clear layers */
+  clearChildren(zoneLayer);
+  clearChildren(flowLayer);
+  clearChildren(controlLayer);
+  clearChildren(nodeLayer);
+  clearChildren(threatLayer);
+  clearChildren(attackLayer);
+
+  /* Render zones */
+  for (var z = 0; z < zoneOrder.length; z++) {
+    var zoneName = zoneOrder[z];
+    var zr = getZoneRect(zoneName, w, h);
+
+    var rect = svgNS('rect');
+    rect.setAttribute('x', zr.x);
+    rect.setAttribute('y', zr.y);
+    rect.setAttribute('width', zr.width);
+    rect.setAttribute('height', zr.height);
+    rect.setAttribute('fill', ZONE_FILLS[zoneName] || ZONE_FILLS.internal);
+    rect.setAttribute('stroke', ZONE_STROKES[zoneName] || ZONE_STROKES.internal);
+    rect.setAttribute('class', 'trust-zone');
+    zoneLayer.appendChild(rect);
+
+    var label = svgNS('text');
+    label.setAttribute('x', zr.x + 12);
+    label.setAttribute('y', zr.y + 20);
+    label.setAttribute('class', 'trust-zone-label');
+    label.setAttribute('fill', ZONE_STROKES[zoneName] || '#1e2d42');
+    label.textContent = zoneName.toUpperCase();
+    zoneLayer.appendChild(label);
+  }
+
+  /* Render flows */
+  for (var fi = 0; fi < edges.length; fi++) {
+    flowLayer.appendChild(buildFlowSVG(edges[fi]));
+  }
+
+  /* Render controls */
+  for (var ci = 0; ci < controls.length; ci++) {
+    controlLayer.appendChild(buildControlSVG(controls[ci]));
+  }
+
+  /* Render nodes */
+  for (var ni = 0; ni < nodes.length; ni++) {
+    nodeLayer.appendChild(buildNodeSVG(nodes[ni]));
+  }
+
+  /* Render threat barnacles */
+  for (var ti = 0; ti < threats.length; ti++) {
+    threatLayer.appendChild(buildThreatSVG(threats[ti], ti));
+  }
+
+  renderSummaryBar();
+  closePanel();
+}
+
+/* ── Summary Bar ────────────────────────────────────────────── */
+function renderSummaryBar() {
+  clearChildren(summaryBar);
+
+  var counts = { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
+  for (var i = 0; i < threats.length; i++) {
+    var lvl = getSeverityLevel(threats[i].severity || 0);
+    counts[lvl]++;
+  }
+
+  var labels = ['critical', 'high', 'medium', 'low', 'info'];
+  for (var j = 0; j < labels.length; j++) {
+    var lbl = labels[j];
+    if (counts[lbl] === 0) continue;
+    var item = document.createElement('span');
+    item.className = 'summary-item';
+    item.innerHTML = '<span class="summary-dot" style="background:' + SEVERITY_COLORS[lbl] + '"></span>' +
+                     '<span class="summary-count">' + counts[lbl] + '</span>' +
+                     lbl.charAt(0).toUpperCase() + lbl.slice(1);
+    summaryBar.appendChild(item);
+  }
+
+  /* Stride category breakdown */
+  var strideCounts = {};
+  for (var k = 0; k < threats.length; k++) {
+    var s = (threats[k].stride || 'unknown').toLowerCase();
+    strideCounts[s] = (strideCounts[s] || 0) + 1;
+  }
+  var strideKeys = Object.keys(strideCounts);
+  for (var m = 0; m < strideKeys.length; m++) {
+    var sk = strideKeys[m];
+    var sItem = document.createElement('span');
+    sItem.className = 'summary-item';
+    sItem.innerHTML = '<span class="summary-dot" style="background:' + (STRIDE_COLORS[sk] || '#64748b') + '"></span>' +
+                      '<span class="summary-count">' + strideCounts[sk] + '</span>' +
+                      sk.split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
+    summaryBar.appendChild(sItem);
+  }
+
+  var assetCount = document.createElement('span');
+  assetCount.id = 'summary-assets';
+  assetCount.textContent = nodes.length + ' assets \u2022 ' + edges.length + ' flows \u2022 ' + threats.length + ' threats';
+  if (controls.length > 0) assetCount.textContent += ' \u2022 ' + controls.length + ' controls';
+  summaryBar.appendChild(assetCount);
+}
+
+/* ── Side Panel ─────────────────────────────────────────────── */
+function openPanel() {
+  sidePanel.classList.add('open');
+}
+
+function closePanel() {
+  sidePanel.classList.remove('open');
+  selectedNode = null;
+  selectedThreat = null;
+  clearHighlights();
+  clearDimming();
+}
+
+function showNodePanel(node) {
+  selectedNode = node;
+  selectedThreat = null;
+  panelTitle.textContent = node.name;
+  panelTitle.style.color = NODE_COLORS[node.type] || '#22d3ee';
+
+  var html = '';
+
+  /* Node details */
+  html += '<div class="panel-section">';
+  html += '<div class="panel-section-title">Asset Details</div>';
+  html += '<div class="panel-field"><div class="panel-field-label">Type</div><div class="panel-field-value">' +
+          '<span class="panel-tag" style="border:1px solid ' + (NODE_COLORS[node.type] || '#22d3ee') + ';color:' + (NODE_COLORS[node.type] || '#22d3ee') + '">' +
+          escapeHtml(node.type) + '</span>';
+  if (node.subtype) {
+    html += '<span class="panel-tag" style="border:1px solid var(--dim);color:var(--dim)">' + escapeHtml(node.subtype) + '</span>';
+  }
+  html += '</div></div>';
+  html += '<div class="panel-field"><div class="panel-field-label">Trust Zone</div><div class="panel-field-value">' + escapeHtml(node.zone) + '</div></div>';
+  html += '<div class="panel-field"><div class="panel-field-label">Criticality</div><div class="panel-field-value">' + node.criticality + ' / 5</div></div>';
+  if (node.description) {
+    html += '<div class="panel-field"><div class="panel-field-label">Description</div><div class="panel-field-value">' + escapeHtml(node.description) + '</div></div>';
+  }
+  html += '</div>';
+
+  /* Connected flows */
+  var connFlows = edges.filter(function(e) { return e.source === node.id || e.target === node.id; });
+  if (connFlows.length > 0) {
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">Data Flows (' + connFlows.length + ')</div>';
+    for (var i = 0; i < connFlows.length; i++) {
+      var f = connFlows[i];
+      var dir = f.source === node.id ? '\u2192' : '\u2190';
+      var other = f.source === node.id ? f.target : f.source;
+      var otherNode = nodeMap[other];
+      var otherName = otherNode ? otherNode.name : other;
+      html += '<div class="panel-flow-item" style="border-color:' + (f.encrypted ? 'var(--emerald)' : 'var(--rose)') + '">';
+      html += '<span style="color:var(--text)">' + dir + ' ' + escapeHtml(otherName) + '</span>';
+      if (f.label) html += '<br><span style="color:var(--dim);font-size:10px">' + escapeHtml(f.label) + '</span>';
+      if (f.protocol) html += ' <span style="color:var(--dim);font-size:10px">(' + escapeHtml(f.protocol) + ')</span>';
+      html += '<br><span style="font-size:10px;color:' + (f.encrypted ? 'var(--emerald)' : 'var(--rose)') + '">' +
+              (f.encrypted ? '\u2713 Encrypted' : '\u2717 Unencrypted') + '</span>';
+      html += ' <span style="font-size:10px;color:var(--dim)">Sensitivity: ' + f.sensitivity + '/4</span>';
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  /* Threats on this node */
+  var nodeThreats = threats.filter(function(t) { return t.assetId === node.id || (t.assets && t.assets.indexOf(node.id) >= 0); });
+  if (nodeThreats.length > 0) {
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">Threats (' + nodeThreats.length + ')</div>';
+    for (var j = 0; j < nodeThreats.length; j++) {
+      var th = nodeThreats[j];
+      var sevColor = getSeverityColor(th.severity);
+      var strideColor = getStrideColor(th.stride);
+      html += '<div class="panel-threat-item" data-threat-click="' + th.id + '">';
+      html += '<span class="panel-threat-severity" style="background:' + sevColor + '"></span>';
+      html += '<span style="color:var(--text);font-size:12px">' + escapeHtml(th.title) + '</span><br>';
+      html += '<span class="panel-tag panel-tag-stride" style="border-color:' + strideColor + ';color:' + strideColor + '">' + escapeHtml(th.stride) + '</span>';
+      html += '<span class="panel-tag" style="border:1px solid ' + sevColor + ';color:' + sevColor + '">' + th.severity.toFixed(1) + '</span>';
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  /* Controls protecting this node */
+  var nodeControls = controls.filter(function(c) { return c.assets && c.assets.indexOf(node.id) >= 0; });
+  if (nodeControls.length > 0) {
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">Controls (' + nodeControls.length + ')</div>';
+    for (var m = 0; m < nodeControls.length; m++) {
+      var ctrl = nodeControls[m];
+      html += '<div class="panel-flow-item" style="border-color:var(--emerald)">';
+      html += '<span style="color:var(--emerald);font-size:12px">\u2731 ' + escapeHtml(ctrl.name) + '</span>';
+      html += '<br><span style="color:var(--dim);font-size:10px">' + escapeHtml(ctrl.type) + '</span>';
+      if (ctrl.description) {
+        html += '<br><span style="color:var(--dim);font-size:10px">' + escapeHtml(ctrl.description) + '</span>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  panelBody.innerHTML = html;
+  openPanel();
+
+  /* Wire up threat clicks inside panel */
+  var threatItems = panelBody.querySelectorAll('[data-threat-click]');
+  for (var ti = 0; ti < threatItems.length; ti++) {
+    threatItems[ti].addEventListener('click', function(e) {
+      var tid = this.getAttribute('data-threat-click');
+      var thr = threatMap[tid];
+      if (thr) showThreatPanel(thr);
+    });
+  }
+}
+
+function showThreatPanel(threat) {
+  selectedThreat = threat;
+  selectedNode = null;
+  var strideColor = getStrideColor(threat.stride);
+  var sevColor = getSeverityColor(threat.severity);
+  var sevLevel = getSeverityLevel(threat.severity);
+  panelTitle.textContent = threat.title;
+  panelTitle.style.color = strideColor;
+
+  var html = '';
+
+  html += '<div class="panel-section">';
+  html += '<div class="panel-section-title">Threat Classification</div>';
+  html += '<div class="panel-field"><div class="panel-field-label">STRIDE Category</div><div class="panel-field-value">' +
+          '<span class="panel-tag panel-tag-stride" style="border-color:' + strideColor + ';color:' + strideColor + '">' + escapeHtml(threat.stride) + '</span></div></div>';
+  html += '<div class="panel-field"><div class="panel-field-label">Severity</div><div class="panel-field-value">' +
+          '<span class="panel-tag" style="border:1px solid ' + sevColor + ';color:' + sevColor + '">' + threat.severity.toFixed(1) + ' ' + sevLevel.toUpperCase() + '</span></div></div>';
+  html += '</div>';
+
+  if (threat.description) {
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">Description</div>';
+    html += '<div class="panel-field-value">' + escapeHtml(threat.description) + '</div>';
+    html += '</div>';
+  }
+
+  /* Affected assets */
+  var affectedAssets = threat.assets || [threat.assetId].filter(Boolean);
+  if (affectedAssets.length > 0) {
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">Blast Radius (' + affectedAssets.length + ' assets)</div>';
+    for (var i = 0; i < affectedAssets.length; i++) {
+      var an = nodeMap[affectedAssets[i]];
+      if (an) {
+        html += '<div class="panel-flow-item" style="border-color:' + sevColor + '">' +
+                '<span style="color:var(--text)">' + escapeHtml(an.name) + '</span>' +
+                ' <span style="color:var(--dim);font-size:10px">(' + escapeHtml(an.zone) + ')</span></div>';
+      }
+    }
+    html += '</div>';
+  }
+
+  if (threat.mitigation) {
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">Recommended Mitigation</div>';
+    html += '<div class="panel-field-value">' + escapeHtml(threat.mitigation) + '</div>';
+    html += '</div>';
+  }
+
+  /* Related controls */
+  var relatedControls = controls.filter(function(c) {
+    return c.mitigates && c.mitigates.indexOf(threat.id) >= 0;
+  });
+  if (relatedControls.length > 0) {
+    html += '<div class="panel-section">';
+    html += '<div class="panel-section-title">Mitigating Controls</div>';
+    for (var j = 0; j < relatedControls.length; j++) {
+      html += '<div class="panel-flow-item" style="border-color:var(--emerald)">' +
+              '<span style="color:var(--emerald)">\u2731 ' + escapeHtml(relatedControls[j].name) + '</span>' +
+              '<br><span style="color:var(--dim);font-size:10px">' + escapeHtml(relatedControls[j].description) + '</span></div>';
+    }
+    html += '</div>';
+  }
+
+  /* Attack path simulation */
+  var relatedPath = null;
+  if (threat.attackPathId) {
+    for (var p = 0; p < attackPaths.length; p++) {
+      if (attackPaths[p].id === threat.attackPathId) {
+        relatedPath = attackPaths[p];
+        break;
+      }
+    }
+  }
+  if (!relatedPath) {
+    for (var q = 0; q < attackPaths.length; q++) {
+      var ap = attackPaths[q];
+      if (ap.threats && ap.threats.indexOf(threat.id) >= 0) {
+        relatedPath = ap;
+        break;
+      }
+    }
+  }
+
+  html += '<button class="simulate-btn" id="sim-attack-btn"' +
+          (relatedPath ? '' : ' disabled title="No attack path defined for this threat"') +
+          ' data-path-id="' + (relatedPath ? relatedPath.id : '') + '">' +
+          '\u26a1 Simulate Attack</button>';
+
+  panelBody.innerHTML = html;
+  openPanel();
+
+  /* Dim non-affected nodes */
+  highlightBlastRadius(affectedAssets);
+
+  /* Bind simulate button */
+  var simBtn = document.getElementById('sim-attack-btn');
+  if (simBtn && relatedPath) {
+    simBtn.addEventListener('click', function() {
+      simulateAttack(relatedPath);
+    });
+  }
+}
+
+/* ── Highlight & Dimming ────────────────────────────────────── */
+function highlightConnectedFlows(nodeId) {
+  var allFlows = flowLayer.children;
+  for (var i = 0; i < allFlows.length; i++) {
+    var fg = allFlows[i];
+    var mainPath = fg.children[0];
+    var arrow = fg.children[2];
+    if (!mainPath) continue;
+    var src = mainPath.getAttribute('data-source');
+    var tgt = mainPath.getAttribute('data-target');
+    if (src === nodeId || tgt === nodeId) {
+      mainPath.classList.add('highlighted');
+      if (arrow) arrow.classList.add('highlighted');
+    }
+  }
+}
+
+function clearHighlights() {
+  var highlighted = flowLayer.querySelectorAll('.highlighted');
+  for (var i = 0; i < highlighted.length; i++) {
+    highlighted[i].classList.remove('highlighted');
+  }
+}
+
+function highlightBlastRadius(assetIds) {
+  clearDimming();
+  var allNodeEls = nodeLayer.children;
+  for (var i = 0; i < allNodeEls.length; i++) {
+    var nid = allNodeEls[i].getAttribute('data-id');
+    if (assetIds.indexOf(nid) < 0) {
+      allNodeEls[i].classList.add('dimmed');
+    }
+  }
+}
+
+function clearDimming() {
+  var dimmed = nodeLayer.querySelectorAll('.dimmed');
+  for (var i = 0; i < dimmed.length; i++) {
+    dimmed[i].classList.remove('dimmed');
+  }
+}
+
+/* ── Attack Path Animation ──────────────────────────────────── */
+function simulateAttack(path) {
+  if (attackAnimating) return;
+  attackAnimating = true;
+
+  clearChildren(attackLayer);
+  clearDimming();
+
+  var steps = path.steps || [];
+  if (steps.length < 2) { attackAnimating = false; return; }
+
+  var stepDelay = 800;
+  var totalSteps = steps.length;
+
+  /* Dim all nodes first */
+  var allNodeEls = nodeLayer.children;
+  for (var d = 0; d < allNodeEls.length; d++) {
+    allNodeEls[d].classList.add('dimmed');
+  }
+
+  function animateStep(idx) {
+    if (idx >= totalSteps) {
+      attackAnimating = false;
+      return;
+    }
+
+    var stepAssetId = steps[idx];
+    var stepNode = nodeMap[stepAssetId];
+    if (!stepNode) { animateStep(idx + 1); return; }
+
+    /* Un-dim this node and mark compromised */
+    var nodeEl = nodeLayer.querySelector('[data-id="' + stepAssetId + '"]');
+    if (nodeEl) {
+      nodeEl.classList.remove('dimmed');
+      nodeEl.classList.add('node-compromised');
+      scarredNodes.add(stepAssetId);
+    }
+
+    /* Draw tendril from previous node */
+    if (idx > 0) {
+      var prevNode = nodeMap[steps[idx - 1]];
+      if (prevNode && stepNode) {
+        /* Step leader tendril */
+        var tendril = svgNS('line');
+        tendril.setAttribute('x1', prevNode.x.toFixed(1));
+        tendril.setAttribute('y1', prevNode.y.toFixed(1));
+        tendril.setAttribute('x2', stepNode.x.toFixed(1));
+        tendril.setAttribute('y2', stepNode.y.toFixed(1));
+        tendril.setAttribute('class', 'attack-tendril');
+        attackLayer.appendChild(tendril);
+
+        /* Animate tendril appearance */
+        animateElement(tendril, [
+          { prop: 'opacity', from: 0, to: 0.4, dur: 200 },
+          { prop: 'opacity', from: 0.4, to: 0.2, dur: 600, delay: 200 }
+        ]);
+
+        /* Exploit arc */
+        var arc = svgNS('line');
+        arc.setAttribute('x1', prevNode.x.toFixed(1));
+        arc.setAttribute('y1', prevNode.y.toFixed(1));
+        arc.setAttribute('x2', stepNode.x.toFixed(1));
+        arc.setAttribute('y2', stepNode.y.toFixed(1));
+        arc.setAttribute('class', 'attack-arc');
+        attackLayer.appendChild(arc);
+
+        animateElement(arc, [
+          { prop: 'opacity', from: 0, to: 0.9, dur: 150, delay: 200 },
+          { prop: 'opacity', from: 0.9, to: 0.1, dur: 400, delay: 350 }
+        ]);
+      }
+    }
+
+    /* Spread effect on compromised node */
+    var spread = svgNS('circle');
+    spread.setAttribute('cx', stepNode.x.toFixed(1));
+    spread.setAttribute('cy', stepNode.y.toFixed(1));
+    spread.setAttribute('r', '5');
+    spread.setAttribute('class', 'attack-spread');
+    attackLayer.appendChild(spread);
+
+    animateElement(spread, [
+      { prop: 'r', from: 5, to: 50, dur: 600 },
+      { prop: 'opacity', from: 0.3, to: 0, dur: 600 }
+    ]);
+
+    setTimeout(function() { animateStep(idx + 1); }, stepDelay);
+  }
+
+  /* Phase 1: Tendrils probing (faint) */
+  var probeCount = Math.min(3, steps.length);
+  for (var p = 0; p < probeCount; p++) {
+    var probeNode = nodeMap[steps[0]];
+    if (!probeNode) continue;
+    var probe = svgNS('line');
+    var angle = Math.random() * Math.PI * 2;
+    var pLen = 40 + Math.random() * 60;
+    probe.setAttribute('x1', probeNode.x.toFixed(1));
+    probe.setAttribute('y1', probeNode.y.toFixed(1));
+    probe.setAttribute('x2', (probeNode.x + Math.cos(angle) * pLen).toFixed(1));
+    probe.setAttribute('y2', (probeNode.y + Math.sin(angle) * pLen).toFixed(1));
+    probe.setAttribute('class', 'attack-tendril');
+    attackLayer.appendChild(probe);
+    animateElement(probe, [
+      { prop: 'opacity', from: 0, to: 0.3, dur: 300, delay: p * 150 },
+      { prop: 'opacity', from: 0.3, to: 0, dur: 400, delay: 300 + p * 150 }
+    ]);
+  }
+
+  setTimeout(function() { animateStep(0); }, 600);
+}
+
+function animateElement(el, anims) {
+  for (var i = 0; i < anims.length; i++) {
+    (function(anim) {
+      var delay = anim.delay || 0;
+      var dur = anim.dur || 300;
+      var start = null;
+      setTimeout(function() {
+        function step(ts) {
+          if (!start) start = ts;
+          var progress = Math.min((ts - start) / dur, 1);
+          var eased = progress < 0.5
+            ? 2 * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+          var val = anim.from + (anim.to - anim.from) * eased;
+          if (anim.prop === 'opacity') {
+            el.style.opacity = val;
+          } else {
+            el.setAttribute(anim.prop, val);
+          }
+          if (progress < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      }, delay);
+    })(anims[i]);
+  }
+}
+
+/* ── Event Handlers ─────────────────────────────────────────── */
+function getMousePos(e) {
+  if (!svgRect) svgRect = svg.getBoundingClientRect();
+  return {
+    x: e.clientX - svgRect.left,
+    y: e.clientY - svgRect.top
+  };
+}
+
+function findNodeAt(x, y) {
+  for (var i = 0; i < nodes.length; i++) {
+    var n = nodes[i];
+    var size = getNodeSize(n.criticality);
+    if (Math.abs(x - n.x) < size && Math.abs(y - n.y) < size) {
+      return n;
+    }
+  }
+  return null;
+}
+
+function findThreatAt(x, y) {
+  var els = threatLayer.children;
+  for (var i = 0; i < els.length; i++) {
+    var transform = els[i].getAttribute('transform');
+    if (!transform) continue;
+    var match = transform.match(/translate\(([^,]+),([^)]+)\)/);
+    if (!match) continue;
+    var tx = parseFloat(match[1]);
+    var ty = parseFloat(match[2]);
+    if (Math.abs(x - tx) < 14 && Math.abs(y - ty) < 14) {
+      var tid = els[i].getAttribute('data-threat-id');
+      return threatMap[tid] || null;
+    }
+  }
+  return null;
+}
+
+svg.addEventListener('mousedown', function(e) {
+  var pos = getMousePos(e);
+  var threat = findThreatAt(pos.x, pos.y);
+  if (threat) {
+    showThreatPanel(threat);
+    e.preventDefault();
+    return;
+  }
+  var node = findNodeAt(pos.x, pos.y);
+  if (node) {
+    dragNode = node;
+    dragOffset.x = pos.x - node.x;
+    dragOffset.y = pos.y - node.y;
+    svg.classList.add('dragging-node');
+    showNodePanel(node);
+    highlightConnectedFlows(node.id);
+    e.preventDefault();
+  }
+});
+
+svg.addEventListener('mousemove', function(e) {
+  var pos = getMousePos(e);
+  if (dragNode) {
+    dragNode.x = pos.x - dragOffset.x;
+    dragNode.y = pos.y - dragOffset.y;
+    dragNode.vx = 0;
+    dragNode.vy = 0;
+    e.preventDefault();
+    return;
+  }
+
+  /* Hover detection */
+  var node = findNodeAt(pos.x, pos.y);
+  if (node !== hoveredNode) {
+    clearHighlights();
+    hoveredNode = node;
+    if (node) {
+      highlightConnectedFlows(node.id);
+    }
+  }
+});
+
+svg.addEventListener('mouseup', function(e) {
+  if (dragNode) {
+    dragNode = null;
+    svg.classList.remove('dragging-node');
+  }
+});
+
+svg.addEventListener('mouseleave', function(e) {
+  if (dragNode) {
+    dragNode = null;
+    svg.classList.remove('dragging-node');
+  }
+  if (hoveredNode && !selectedNode) {
+    clearHighlights();
+    hoveredNode = null;
+  }
+});
+
+/* Click on node (non-drag) */
+svg.addEventListener('click', function(e) {
+  var pos = getMousePos(e);
+  var threat = findThreatAt(pos.x, pos.y);
+  if (threat) {
+    showThreatPanel(threat);
+    return;
+  }
+  var node = findNodeAt(pos.x, pos.y);
+  if (node) {
+    showNodePanel(node);
+    highlightConnectedFlows(node.id);
+  }
+});
+
+panelClose.addEventListener('click', closePanel);
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closePanel();
+    clearChildren(attackLayer);
+    attackAnimating = false;
+    /* Clear compromised state */
+    var compromised = nodeLayer.querySelectorAll('.node-compromised');
+    for (var i = 0; i < compromised.length; i++) {
+      compromised[i].classList.remove('node-compromised');
+    }
+  }
+});
+
+/* Controls toggle */
+controlsBtn.addEventListener('click', function() {
+  controlsDeployed = !controlsDeployed;
+  controlsBtn.classList.toggle('active', controlsDeployed);
+  controlsBtn.querySelector('span').textContent = controlsDeployed ? '\u25a0' : '\u25b9';
+  svg.classList.toggle('controls-on', controlsDeployed);
+});
+
+/* Help modal */
+helpBtn.addEventListener('click', function() {
+  helpModal.classList.add('visible');
+});
+helpModal.addEventListener('click', function(e) {
+  if (e.target === helpModal) helpModal.classList.remove('visible');
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && helpModal.classList.contains('visible')) {
+    helpModal.classList.remove('visible');
+  }
+});
+
+/* ── Data Polling ───────────────────────────────────────────── */
+function pollData() {
+  fetch('/data.json?t=' + Date.now())
+    .then(function(res) {
+      if (!res.ok) return null;
+      return res.text();
+    })
+    .then(function(text) {
+      if (!text) return;
+      if (text === lastDataHash) return;
+      lastDataHash = text;
+      try {
+        var data = JSON.parse(text);
+        processData(data);
+        fullRender();
+      } catch (e) {
+        /* Malformed JSON — ignore, wait for next poll */
+      }
+    })
+    .catch(function() {
+      /* Network error — ignore, wait for next poll */
+    });
+}
+
+/* ── Init ───────────────────────────────────────────────────── */
+pollData();
+setInterval(pollData, 500);
+requestAnimationFrame(renderFrame);
+
+})();
+</script>
+</body>
+</html>

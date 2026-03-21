@@ -1,6 +1,6 @@
 site_name: jord0.skills
 site_url: https://jord0-cmd.github.io/jord0.skills
-site_description: "14 production skills for Claude Code. Copy a folder, get a superpower."
+site_description: "18 production skills for Claude Code. Copy a folder, get a superpower."
 site_author: jord0.cmd
 
 repo_url: https://github.com/jord0-cmd/jord0.skills
@@ -102,6 +102,10 @@ nav:
     - NOTIFY: skills/notify.md
     - REGTRAX: skills/regtrax.md
     - REFRAX: skills/refrax.md
+    - ARBITER: skills/arbiter.md
+    - WITNESS: skills/witness.md
+    - THREATMAP: skills/threatmap.md
+    - LEDGER: skills/ledger.md
   - Recipes:
     - Overview: recipes/index.md
     - Code Review Pipeline: recipes/code-review-pipeline.md
